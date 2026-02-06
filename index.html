@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- PWA / Mobile Web App Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="UAS Manager">
+    <meta name="theme-color" content="#2c5282">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✈️</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22white%22/><text y=%22.9em%22 x=%2250%22 text-anchor=%22middle%22 font-size=%2280%22>✈️</text></svg>">
+
+    <title>UAS Flight Manager - CRA</title>
+    <style>
+        :root {
+            /* Colores Tema Claro (Aeronáutico/Profesional) */
+            --bg-body: #f4f6f8;
+            --bg-card: #ffffff;
+            --text-main: #1a202c;
+            --text-muted: #718096;
+            --primary: #2c5282; /* Azul Aeronáutico */
+            --primary-dark: #1a365d;
+            --accent: #3182ce;
+            --success: #38a169;
+            --border: #e2e8f0;
+            --nav-bg: #ffffff;
+            --nav-active: #2b6cb0;
+            --nav-inactive: #a0aec0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        [data-theme="dark"] {
+            /* Colores Tema Oscuro (Cabina Nocturna) */
+            --bg-body: #1a202c;
+            --bg-card: #2d3748;
+            --text-main: #f7fafc;
+            --text-muted: #a0aec0;
+            --primary: #63b3ed;
+            --primary-dark: #4299e1;
+            --accent: #4fd1c5;
+            --success: #48bb78;
+            --border: #4a5568;
+            --nav-bg: #2d3748;
+            --nav-active: #63b3ed;
+            --nav-inactive: #718096;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.3s, color 0.3s;
+            overflow: hidden; /* Evitar scroll en body, usar scroll en content */
+        }
+
+        /* --- Header --- */
+        header {
+            background-color: var(--bg-card);
+            padding: 1rem;
+            box-shadow: var(--shadow);
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 1.1rem;
+            margin: 0;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .icon-plane {
+            transform: rotate(-45deg);
+        }
+
+        .theme-toggle {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: var(--text-main);
+            padding: 0.5rem;
+        }
+
+        /* --- Progress Bar --- */
+        .progress-container {
+            background-color: var(--bg-card);
+            padding: 0 1rem 0.5rem 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .progress-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .progress-track {
+            height: 6px;
+            background-color: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--success);
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        /* --- Main Content --- */
+        main {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            padding-bottom: 5rem; /* Espacio para el nav */
+            position: relative;
+        }
+
+        .screen {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- Document Cards --- */
+        .card {
+            background-color: var(--bg-card);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            font-size: 1rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        .doc-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            background-color: var(--bg-body);
+            border-radius: 8px;
+            border: 1px dashed var(--nav-inactive);
+        }
+
+        .doc-item.loaded {
+            border: 1px solid var(--success);
+            background-color: rgba(56, 161, 105, 0.1);
+        }
+
+        .doc-info {
+            flex: 1;
+            padding-right: 1rem;
+        }
+
+        .doc-label {
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: block;
+            margin-bottom: 0.2rem;
+        }
+
+        .doc-status {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .doc-item.loaded .doc-status {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn-upload {
+            background-color: var(--primary);
+            color: white;
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-align: center;
+            border: none;
+            transition: background 0.2s;
+        }
+
+        .btn-upload:active {
+            transform: scale(0.98);
+        }
+
+        .check-icon {
+            display: none;
+            color: var(--success);
+            font-size: 1.2rem;
+        }
+
+        .doc-item.loaded .check-icon {
+            display: block;
+        }
+
+        .doc-item.loaded .btn-upload {
+            display: none; /* Ocultar botón si ya está cargado */
+        }
+
+        /* --- Checklist Items --- */
+        .checklist-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 0.8rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .checklist-item:last-child {
+            border-bottom: none;
+        }
+
+        .custom-checkbox {
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+
+        .custom-checkbox input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .checkmark {
+            width: 24px;
+            height: 24px;
+            background-color: var(--bg-body);
+            border: 2px solid var(--text-muted);
+            border-radius: 6px;
+            margin-right: 12px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .custom-checkbox input:checked ~ .checkmark {
+            background-color: var(--success);
+            border-color: var(--success);
+        }
+
+        .checkmark:after {
+            content: "";
+            display: none;
+            width: 6px;
+            height: 12px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+            margin-top: -2px;
+        }
+
+        .custom-checkbox input:checked ~ .checkmark:after {
+            display: block;
+        }
+
+        .item-text {
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        /* --- Quick Links --- */
+        .quick-links {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .link-btn {
+            background-color: var(--primary);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            text-decoration: none;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+            transition: opacity 0.2s;
+        }
+
+        .link-btn:active {
+            opacity: 0.8;
+        }
+
+        .link-edit {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: rgba(0,0,0,0.2);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        /* --- Bottom Nav --- */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: var(--nav-bg);
+            border-top: 1px solid var(--border);
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            padding-bottom: env(safe-area-inset-bottom);
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            z-index: 100;
+        }
+
+        .nav-item {
+            padding: 0.8rem 0.2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--nav-inactive);
+            text-decoration: none;
+            font-size: 0.7rem;
+            gap: 0.3rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .nav-item.active {
+            color: var(--nav-active);
+        }
+
+        .nav-icon {
+            font-size: 1.3rem;
+            margin-bottom: 2px;
+        }
+
+        /* --- Reset Button --- */
+        .reset-container {
+            margin-top: 2rem;
+            text-align: center;
+        }
+
+        .btn-reset {
+            background-color: transparent;
+            border: 1px solid var(--text-muted);
+            color: var(--text-muted);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        /* --- Modal for editing links --- */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            padding: 1rem;
+        }
+        
+        .modal.open {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg-body);
+            color: var(--text-main);
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+
+        .btn-modal {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-cancel {
+            background: var(--bg-body);
+            color: var(--text-main);
+        }
+
+        .btn-save {
+            background: var(--primary);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1><span class="icon-plane">✈️</span> UAS Manager</h1>
+        <button class="theme-toggle" id="themeToggle">🌙</button>
+    </header>
+    
+    <div class="progress-container">
+        <div class="progress-label">
+            <span id="progressText">Progreso Fase</span>
+            <span id="progressPercent">0%</span>
+        </div>
+        <div class="progress-track">
+            <div class="progress-fill" id="progressBar"></div>
+        </div>
+    </div>
+
+    <main>
+        <!-- Pantalla 1: Documentación -->
+        <section id="screen-docs" class="screen active">
+            <div class="card">
+                <h3>Documentación Requerida</h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    Asegúrese de cargar los documentos digitales vigentes para la operación.
+                </p>
+
+                <div class="doc-item" id="doc-licencia">
+                    <div class="doc-info">
+                        <span class="doc-label">Licencia de Piloto</span>
+                        <span class="doc-status" id="status-licencia">No cargado</span>
+                    </div>
+                    <label class="btn-upload">
+                        Cargar
+                        <input type="file" class="file-input" onchange="handleFileUpload('licencia', this)">
+                    </label>
+                    <span class="check-icon">✓</span>
+                </div>
+
+                <div class="doc-item" id="doc-seguro">
+                    <div class="doc-info">
+                        <span class="doc-label">Póliza de Seguro</span>
+                        <span class="doc-status" id="status-seguro">Mín. 750k DEG</span>
+                    </div>
+                    <label class="btn-upload">
+                        Cargar
+                        <input type="file" class="file-input" onchange="handleFileUpload('seguro', this)">
+                    </label>
+                    <span class="check-icon">✓</span>
+                </div>
+
+                <div class="doc-item" id="doc-operador">
+                    <div class="doc-info">
+                        <span class="doc-label">Operador AESA</span>
+                        <span class="doc-status" id="status-operador">Tarjeta digital</span>
+                    </div>
+                    <label class="btn-upload">
+                        Cargar
+                        <input type="file" class="file-input" onchange="handleFileUpload('operador', this)">
+                    </label>
+                    <span class="check-icon">✓</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pantalla 2: Pre-Vuelo -->
+        <section id="screen-pre" class="screen">
+            <div class="quick-links">
+                <a href="#" target="_blank" class="link-btn" id="link1">
+                    <span>☁️</span> <span id="label-link1">Meteo</span>
+                    <button class="link-edit" onclick="openEditModal(1, event)">✎</button>
+                </a>
+                <a href="#" target="_blank" class="link-btn" id="link2">
+                    <span>🗺️</span> <span id="label-link2">ENAIRE</span>
+                    <button class="link-edit" onclick="openEditModal(2, event)">✎</button>
+                </a>
+            </div>
+
+            <div class="card">
+                <h3>Checklist Pre-Vuelo</h3>
+                <div class="checklist-group" data-phase="pre">
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="pre_obj" onchange="updateProgress('pre')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Objetivos y volumen operacional definido</span>
+                    </label>
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="pre_entorno" onchange="updateProgress('pre')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Evaluación entorno (obs/topo)</span>
+                    </label>
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="pre_notam" onchange="updateProgress('pre')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">NOTAMs y Espacio Aéreo (>120m)</span>
+                    </label>
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="pre_riesgos" onchange="updateProgress('pre')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Gestión riesgos y zona terrestre</span>
+                    </label>
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="pre_insp" onchange="updateProgress('pre')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Inspección visual UAS (fijaciones)</span>
+                    </label>
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="pre_failsafe" onchange="updateProgress('pre')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Config. Fail-safe y Geografía</span>
+                    </label>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pantalla 3: Durante el Vuelo -->
+        <section id="screen-flight" class="screen">
+            <div class="card">
+                <h3>En Vuelo (Gestión Activa)</h3>
+                <div class="checklist-group" data-phase="flight">
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="fly_bat" onchange="updateProgress('flight')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Monitorización autonomía/batería</span>
+                    </label>
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="fly_vlos" onchange="updateProgress('flight')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Mantenimiento VLOS y conciencia</span>
+                    </label>
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="fly_people" onchange="updateProgress('flight')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Control incursión personas no part.</span>
+                    </label>
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="fly_anom" onchange="updateProgress('flight')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Gestión trayectoria anómala</span>
+                    </label>
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="fly_emerg" onchange="updateProgress('flight')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Procedimientos emergencia/contingencia</span>
+                    </label>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pantalla 4: Post-Vuelo -->
+        <section id="screen-post" class="screen">
+            <div class="card">
+                <h3>Cierre de Operación</h3>
+                <div class="checklist-group" data-phase="post">
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="post_off" onchange="updateProgress('post')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Apagado y aseguramiento UAS</span>
+                    </label>
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="post_insp" onchange="updateProgress('post')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Inspección técnica (daños/fatiga)</span>
+                    </label>
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="post_log" onchange="updateProgress('post')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Registro libro de vuelo</span>
+                    </label>
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="post_notif" onchange="updateProgress('post')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Notificación sucesos (si aplica)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="reset-container">
+                <button class="btn-reset" onclick="resetApp()">Reiniciar Jornada (Reset Checks)</button>
+            </div>
+        </section>
+    </main>
+
+    <nav class="bottom-nav">
+        <button class="nav-item active" onclick="switchTab('docs', this)">
+            <span class="nav-icon">📂</span>
+            <span>Docs</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('pre', this)">
+            <span class="nav-icon">📋</span>
+            <span>Pre-Vuelo</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('flight', this)">
+            <span class="nav-icon">🎮</span>
+            <span>Vuelo</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('post', this)">
+            <span class="nav-icon">🏁</span>
+            <span>Post</span>
+        </button>
+    </nav>
+
+    <!-- Edit Link Modal -->
+    <div id="linkModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top:0">Configurar Enlace</h3>
+            <div class="form-group">
+                <label>Nombre del Servicio</label>
+                <input type="text" id="linkNameInput">
+            </div>
+            <div class="form-group">
+                <label>URL (https://...)</label>
+                <input type="url" id="linkUrlInput">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-modal btn-cancel" onclick="closeModal()">Cancelar</button>
+                <button class="btn-modal btn-save" onclick="saveLinkEdit()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- State Management ---
+        const state = {
+            currentTab: 'docs',
+            links: {
+                link1: { name: 'Meteo (CRA/AEMET)', url: 'https://www.aemet.es/' },
+                link2: { name: 'ENAIRE Drones', url: 'https://drones.enaire.es/' }
+            },
+            editingLinkId: null
+        };
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTheme();
+            loadState();
+            renderLinks();
+            updateAllProgress();
+            
+            // Initial render fallback
+            switchTab('docs', document.querySelector('.nav-item'));
+        });
+
+        // --- Navigation ---
+        function switchTab(screenId, btn) {
+            // Update UI State
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(`screen-${screenId}`).classList.add('active');
+
+            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+            if(btn) btn.classList.add('active');
+            else {
+                // Find button by index mapping if simple call
+                const index = ['docs', 'pre', 'flight', 'post'].indexOf(screenId);
+                const navItems = document.querySelectorAll('.nav-item');
+                if(navItems[index]) navItems[index].classList.add('active');
+            }
+
+            state.currentTab = screenId;
+            updateProgressHeader(screenId);
+        }
+
+        // --- Theme ---
+        const themeToggle = document.getElementById('themeToggle');
+        themeToggle.addEventListener('click', () => {
+            const current = document.documentElement.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+            themeToggle.textContent = next === 'dark' ? '☀️' : '🌙';
+        });
+
+        function loadTheme() {
+            const saved = localStorage.getItem('theme');
+            if(saved) {
+                document.documentElement.setAttribute('data-theme', saved);
+                themeToggle.textContent = saved === 'dark' ? '☀️' : '🌙';
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                themeToggle.textContent = '☀️';
+            }
+        }
+
+        // --- File Simulation ---
+        function handleFileUpload(type, input) {
+            if (input.files && input.files[0]) {
+                const fileName = input.files[0].name;
+                saveDocState(type, fileName);
+                renderDocState(type, fileName);
+            }
+        }
+
+        function saveDocState(type, fileName) {
+            localStorage.setItem(`doc_${type}`, fileName);
+        }
+
+        function renderDocState(type, fileName) {
+            const el = document.getElementById(`doc-${type}`);
+            const statusEl = document.getElementById(`status-${type}`);
+            
+            if (fileName) {
+                el.classList.add('loaded');
+                statusEl.textContent = fileName;
+            } else {
+                el.classList.remove('loaded');
+                // Mantener texto por defecto según tipo si se limpia
+            }
+        }
+
+        // --- Checkbox Persistence ---
+        // Add listeners to all checkboxes
+        document.querySelectorAll('input[type="checkbox"]').forEach(box => {
+            box.addEventListener('change', (e) => {
+                localStorage.setItem(e.target.dataset.id, e.target.checked);
+            });
+        });
+
+        // --- Editable Links ---
+        function openEditModal(id, event) {
+            event.preventDefault(); // Prevent link following
+            event.stopPropagation();
+            state.editingLinkId = id;
+            
+            const linkKey = `link${id}`;
+            document.getElementById('linkNameInput').value = state.links[linkKey].name;
+            document.getElementById('linkUrlInput').value = state.links[linkKey].url;
+            
+            document.getElementById('linkModal').classList.add('open');
+        }
+
+        function closeModal() {
+            document.getElementById('linkModal').classList.remove('open');
+            state.editingLinkId = null;
+        }
+
+        function saveLinkEdit() {
+            const id = state.editingLinkId;
+            const name = document.getElementById('linkNameInput').value;
+            const url = document.getElementById('linkUrlInput').value;
+
+            if(id && name && url) {
+                state.links[`link${id}`] = { name, url };
+                localStorage.setItem('customLinks', JSON.stringify(state.links));
+                renderLinks();
+                closeModal();
+            }
+        }
+
+        function renderLinks() {
+            for (let i = 1; i <= 2; i++) {
+                const link = state.links[`link${i}`];
+                const el = document.getElementById(`link${i}`);
+                const label = document.getElementById(`label-link${i}`);
+                
+                el.href = link.url;
+                label.textContent = link.name;
+            }
+        }
+
+        // --- Progress Logic ---
+        function updateProgress(phaseName) {
+            // Find current active screen or passed phase
+            if (!phaseName) return;
+
+            const container = document.querySelector(`.checklist-group[data-phase="${phaseName}"]`);
+            if(!container) return;
+
+            const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+            const total = checkboxes.length;
+            let checked = 0;
+            checkboxes.forEach(c => { if(c.checked) checked++; });
+
+            const percent = total === 0 ? 0 : Math.round((checked / total) * 100);
+            
+            // Only update UI if we are looking at that tab or it's requested
+            updateProgressBarUI(phaseName, percent);
+        }
+
+        function updateAllProgress() {
+            ['pre', 'flight', 'post'].forEach(p => updateProgress(p));
+        }
+
+        function updateProgressHeader(screenId) {
+            const bar = document.getElementById('progressBar');
+            const txt = document.getElementById('progressText');
+            const per = document.getElementById('progressPercent');
+
+            if(screenId === 'docs') {
+                // For docs, maybe show doc completion? 
+                // Let's count docs
+                let docsCount = 0;
+                if(localStorage.getItem('doc_licencia')) docsCount++;
+                if(localStorage.getItem('doc_seguro')) docsCount++;
+                if(localStorage.getItem('doc_operador')) docsCount++;
+                const percent = Math.round((docsCount/3)*100);
+                
+                bar.style.width = `${percent}%`;
+                bar.style.backgroundColor = 'var(--accent)';
+                txt.textContent = 'Documentación';
+                per.textContent = `${percent}%`;
+                return;
+            }
+
+            // Map screen id to phase key
+            const phaseMap = { 'pre': 'Pre-Vuelo', 'flight': 'En Vuelo', 'post': 'Post-Vuelo' };
+            const phaseName = phaseMap[screenId];
+            
+            if(phaseName) {
+                // Recalculate for this specific phase
+                const container = document.querySelector(`.checklist-group[data-phase="${screenId}"]`);
+                const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+                const total = checkboxes.length;
+                let checked = 0;
+                checkboxes.forEach(c => { if(c.checked) checked++; });
+                const percent = total === 0 ? 0 : Math.round((checked / total) * 100);
+
+                bar.style.width = `${percent}%`;
+                bar.style.backgroundColor = percent === 100 ? 'var(--success)' : 'var(--primary)';
+                txt.textContent = phaseName;
+                per.textContent = `${percent}%`;
+            }
+        }
+
+        function updateProgressBarUI(phase, percent) {
+            // Only update if currently viewing this phase
+            if(state.currentTab === phase) {
+                const bar = document.getElementById('progressBar');
+                const per = document.getElementById('progressPercent');
+                bar.style.width = `${percent}%`;
+                bar.style.backgroundColor = percent === 100 ? 'var(--success)' : 'var(--primary)';
+                per.textContent = `${percent}%`;
+            }
+        }
+
+        // --- Load & Reset ---
+        function loadState() {
+            // Load Links
+            const savedLinks = localStorage.getItem('customLinks');
+            if(savedLinks) {
+                state.links = JSON.parse(savedLinks);
+            }
+
+            // Load Checkboxes
+            document.querySelectorAll('input[type="checkbox"]').forEach(box => {
+                const val = localStorage.getItem(box.dataset.id);
+                if(val === 'true') box.checked = true;
+            });
+
+            // Load Docs
+            ['licencia', 'seguro', 'operador'].forEach(type => {
+                const f = localStorage.getItem(`doc_${type}`);
+                if(f) renderDocState(type, f);
+            });
+        }
+
+        function resetApp() {
+            if(confirm('¿Seguro que quieres borrar los checks de la jornada? (La documentación y enlaces se mantendrán)')) {
+                // Clear checkboxes from DOM and LocalStorage
+                document.querySelectorAll('input[type="checkbox"]').forEach(box => {
+                    box.checked = false;
+                    localStorage.removeItem(box.dataset.id);
+                });
+                
+                // Update UI
+                updateAllProgress();
+                updateProgressHeader(state.currentTab);
+                
+                // Notificar visualmente
+                alert('Jornada reiniciada. ¡Buen vuelo!');
+            }
+        }
+
+    </script>
+</body>
+</html>
