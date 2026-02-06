@@ -303,9 +303,9 @@
             border-color: var(--primary);
         }
 
-        .btn-delete {
-            color: #e53e3e;
-            border-color: #e53e3e;
+        .btn-edit {
+            color: var(--accent);
+            border-color: var(--accent);
         }
 
         /* --- Checklist Items --- */
@@ -773,6 +773,9 @@
             <div id="viewerBody" style="flex: 1; overflow: auto; padding: 1rem; text-align: center; background: #000;">
                 <!-- Content goes here -->
             </div>
+            <div style="padding: 1rem; border-top: 1px solid var(--border); background: var(--bg-card); text-align: center;">
+                 <button onclick="closeViewer()" style="background: var(--primary); color: white; border: none; padding: 0.8rem 2rem; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%;">Cerrar</button>
+            </div>
         </div>
     </div>
 
@@ -871,7 +874,7 @@
                     
                     <div class="doc-actions">
                         <button class="btn-icon btn-view" onclick="viewDoc('${doc.id}')">👁️</button>
-                        <button class="btn-icon btn-delete" onclick="removeDocFile('${doc.id}')">🗑️</button>
+                        <button class="btn-icon btn-edit" onclick="changeDocFile('${doc.id}')">✎</button>
                     </div>
                 </div>`;
                 container.insertAdjacentHTML('beforeend', html);
@@ -881,6 +884,11 @@
 
         function triggerFileClick(inputId) {
             document.getElementById(inputId).click();
+        }
+        
+        function changeDocFile(docId) {
+            // Re-open file dialog to overwrite
+            triggerFileClick(`input-${docId}`);
         }
 
         function handleFileUpload(id, input) {
