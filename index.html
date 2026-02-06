@@ -376,7 +376,7 @@
         /* --- Quick Links --- */
         .quick-links {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
             gap: 1rem;
             margin-bottom: 1.5rem;
         }
@@ -593,6 +593,9 @@
                     <span>🗺️</span> <span id="label-link2">ENAIRE</span>
                     <button class="link-edit" onclick="openEditModal(2, event)">✎</button>
                 </a>
+                <button class="link-btn" onclick="viewLocalImage()" style="cursor: pointer; border: none; text-decoration: none;">
+                    <span>📍</span> <span>CRA Zona</span>
+                </button>
             </div>
 
             <div class="card">
@@ -1108,9 +1111,29 @@
                 const el = document.getElementById(`link${i}`);
                 const label = document.getElementById(`label-link${i}`);
                 
-                el.href = link.url;
-                label.textContent = link.name;
+                if (link && el && label) {
+                    el.href = link.url;
+                    label.textContent = link.name;
+                }
             }
+        }
+        
+        function viewLocalImage() {
+            const viewerBody = document.getElementById('viewerBody');
+            viewerBody.innerHTML = '';
+            
+            const img = document.createElement('img');
+            img.src = 'CRA%20zona%20de%20vuelo.jpeg';
+            img.style.maxWidth = '100%';
+            img.style.height = 'auto';
+            img.style.display = 'block';
+            img.style.margin = '0 auto';
+            img.onerror = function() {
+                viewerBody.innerHTML = '<p style="color:white">Error: No se pudo cargar la imagen CRA zona de vuelo.jpeg</p>';
+            };
+            viewerBody.appendChild(img);
+            
+            document.getElementById('viewerModal').classList.add('open');
         }
 
         // --- Progress Logic ---
