@@ -763,6 +763,19 @@
         </div>
     </div>
 
+    <!-- Viewer Modal -->
+    <div id="viewerModal" class="modal" style="z-index: 300;">
+        <div class="modal-content" style="max-width: 95%; height: 90%; display: flex; flex-direction: column; padding: 0;">
+            <div style="padding: 1rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--bg-card);">
+                <h3 style="margin: 0; font-size: 1rem;">Visor de Documentos</h3>
+                <button onclick="closeViewer()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <div id="viewerBody" style="flex: 1; overflow: auto; padding: 1rem; text-align: center; background: #000;">
+                <!-- Content goes here -->
+            </div>
+        </div>
+    </div>
+
     <script>
         // --- State Management ---
         const state = {
@@ -906,13 +919,51 @@
         function viewDoc(id) {
             const content = localStorage.getItem(`doc_content_${id}`);
             const mime = localStorage.getItem(`doc_mime_${id}`);
+            const viewerBody = document.getElementById('viewerBody');
             
             if(content && mime) {
-                const win = window.open();
-                win.document.write(`<iframe src="${content}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+                viewerBody.innerHTML = ''; // Clear previous
+                
+                if (mime.startsWith('image/')) {
+                    const img = document.createElement('img');
+                    img.src = content;
+                    img.style.maxWidth = '100%';
+                    img.style.height = 'auto';
+                    img.style.display = 'block';
+                    img.style.margin = '0 auto';
+                    viewerBody.appendChild(img);
+                } else if (mime === 'application/pdf') {
+                    // PDF handling for mobile is tricky, usually embed or object works best for inline if supported
+                    const obj = document.createElement('object');
+                    obj.data = content;
+                    obj.type = "application/pdf";
+                    obj.style.width = '100%';
+                    obj.style.height = '100%';
+                    
+                    // Fallback for iOS which struggles with embedded base64 PDFs
+                    const link = document.createElement('a');
+                    link.href = content;
+                    link.download = "documento.pdf";
+                    link.textContent = "Si no ves el PDF, pulsa aquí para descargar/abrir";
+                    link.style.color = "white";
+                    link.style.display = "block";
+                    link.style.marginTop = "1rem";
+                    
+                    obj.appendChild(link);
+                    viewerBody.appendChild(obj);
+                } else {
+                     viewerBody.innerHTML = '<p style="color:white">Formato no soportado para vista previa.</p>';
+                }
+                
+                document.getElementById('viewerModal').classList.add('open');
             } else {
                 alert('No se puede visualizar el contenido (no se guardó o se borró). Cárgalo de nuevo.');
             }
+        }
+
+        function closeViewer() {
+            document.getElementById('viewerModal').classList.remove('open');
+            document.getElementById('viewerBody').innerHTML = ''; // Clear memory
         }
 
         function openDocsModal() {
