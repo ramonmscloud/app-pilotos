@@ -76,7 +76,7 @@
             height: 100vh;
             background-image: url('logo-cra.png');
             background-repeat: repeat; /* Efecto celosía / mosaico */
-            background-size: 80px; /* Tamaño del patrón */
+            background-size: 33.333% 20%; /* 3 columnas x 5 filas exactas en pantalla */
             background-position: center;
             opacity: 0.06; /* Muy sutil para no interferir */
             pointer-events: none;
@@ -530,45 +530,17 @@
         <!-- Pantalla 1: Documentación -->
         <section id="screen-docs" class="screen active">
             <div class="card">
-                <h3>Documentación Requerida</h3>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); margin-bottom: 1rem; padding-bottom: 0.5rem;">
+                    <h3 style="margin: 0; border: none; padding: 0;">Documentación Requerida</h3>
+                    <button onclick="openDocsModal()" style="background: none; border: none; cursor: pointer; font-size: 1.2rem;">⚙️</button>
+                </div>
+                
                 <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
                     Asegúrese de cargar los documentos digitales vigentes para la operación.
                 </p>
 
-                <div class="doc-item" id="doc-licencia">
-                    <div class="doc-info">
-                        <span class="doc-label">Licencia de Piloto</span>
-                        <span class="doc-status" id="status-licencia">No cargado</span>
-                    </div>
-                    <label class="btn-upload">
-                        Cargar
-                        <input type="file" class="file-input" onchange="handleFileUpload('licencia', this)">
-                    </label>
-                    <span class="check-icon">✓</span>
-                </div>
-
-                <div class="doc-item" id="doc-seguro">
-                    <div class="doc-info">
-                        <span class="doc-label">Póliza de Seguro</span>
-                        <span class="doc-status" id="status-seguro">Mín. 750k DEG</span>
-                    </div>
-                    <label class="btn-upload">
-                        Cargar
-                        <input type="file" class="file-input" onchange="handleFileUpload('seguro', this)">
-                    </label>
-                    <span class="check-icon">✓</span>
-                </div>
-
-                <div class="doc-item" id="doc-operador">
-                    <div class="doc-info">
-                        <span class="doc-label">Operador AESA</span>
-                        <span class="doc-status" id="status-operador">Tarjeta digital</span>
-                    </div>
-                    <label class="btn-upload">
-                        Cargar
-                        <input type="file" class="file-input" onchange="handleFileUpload('operador', this)">
-                    </label>
-                    <span class="check-icon">✓</span>
+                <div id="docs-container">
+                    <!-- Los documentos se generarán dinámicamente aquí -->
                 </div>
             </div>
         </section>
@@ -729,6 +701,31 @@
         </div>
     </div>
 
+    <!-- Edit Docs Modal -->
+    <div id="docsModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top:0">Gestionar Documentación</h3>
+            <ul id="docsListEdit" style="list-style: none; padding: 0; margin-bottom: 1rem; max-height: 200px; overflow-y: auto;">
+                <!-- Lista editable -->
+            </ul>
+            
+            <div style="border-top: 1px solid var(--border); padding-top: 1rem;">
+                <h4 style="margin: 0 0 0.5rem 0; font-size: 0.9rem;">Añadir Nuevo</h4>
+                <div class="form-group">
+                    <input type="text" id="newDocName" placeholder="Nombre (ej. DNI)">
+                </div>
+                <div class="form-group">
+                    <input type="text" id="newDocDesc" placeholder="Descripción (ej. Obligatorio)">
+                </div>
+                <button onclick="addNewDoc()" style="width: 100%; padding: 0.5rem; background: var(--success); color: white; border: none; border-radius: 6px;">+ Añadir</button>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 1rem;">
+                <button class="btn-modal btn-cancel" onclick="closeDocsModal()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // --- State Management ---
         const state = {
@@ -737,14 +734,22 @@
                 link1: { name: 'Meteo (CRA/AEMET)', url: 'https://www.aemet.es/' },
                 link2: { name: 'ENAIRE Drones', url: 'https://drones.enaire.es/' }
             },
-            editingLinkId: null
+            editingLinkId: null,
+            docs: []
         };
+
+        const defaultDocs = [
+            { id: 'licencia', name: 'Licencia de Piloto', desc: 'Licencia UAS' },
+            { id: 'seguro', name: 'Póliza de Seguro', desc: 'Mín. 750k DEG' },
+            { id: 'operador', name: 'Operador AESA', desc: 'Tarjeta digital' }
+        ];
 
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
             loadTheme();
             loadState();
             renderLinks();
+            renderDocs(); // Initial render
             updateAllProgress();
             
             // Initial render fallback
@@ -791,30 +796,90 @@
             }
         }
 
-        // --- File Simulation ---
-        function handleFileUpload(type, input) {
+        // --- Docs Management ---
+        function renderDocs() {
+            const container = document.getElementById('docs-container');
+            container.innerHTML = '';
+
+            state.docs.forEach(doc => {
+                const isLoaded = localStorage.getItem(`doc_${doc.id}`);
+                const statusText = isLoaded ? isLoaded : doc.desc;
+
+                const html = `
+                <div class="doc-item ${isLoaded ? 'loaded' : ''}" id="doc-${doc.id}">
+                    <div class="doc-info">
+                        <span class="doc-label">${doc.name}</span>
+                        <span class="doc-status" id="status-${doc.id}">${statusText}</span>
+                    </div>
+                    <label class="btn-upload">
+                        Cargar
+                        <input type="file" class="file-input" onchange="handleFileUpload('${doc.id}', this)">
+                    </label>
+                    <span class="check-icon">✓</span>
+                </div>`;
+                container.insertAdjacentHTML('beforeend', html);
+            });
+            updateProgressHeader('docs');
+        }
+
+        function handleFileUpload(id, input) {
             if (input.files && input.files[0]) {
                 const fileName = input.files[0].name;
-                saveDocState(type, fileName);
-                renderDocState(type, fileName);
+                localStorage.setItem(`doc_${id}`, fileName);
+                renderDocs(); // Re-render to show update
             }
         }
 
-        function saveDocState(type, fileName) {
-            localStorage.setItem(`doc_${type}`, fileName);
-        }
-
-        function renderDocState(type, fileName) {
-            const el = document.getElementById(`doc-${type}`);
-            const statusEl = document.getElementById(`status-${type}`);
+        function openDocsModal() {
+            const list = document.getElementById('docsListEdit');
+            list.innerHTML = '';
             
-            if (fileName) {
-                el.classList.add('loaded');
-                statusEl.textContent = fileName;
-            } else {
-                el.classList.remove('loaded');
-                // Mantener texto por defecto según tipo si se limpia
+            state.docs.forEach(doc => {
+                const item = document.createElement('li');
+                item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; border-bottom: 1px solid var(--border);';
+                item.innerHTML = `
+                    <span>${doc.name}</span>
+                    <button onclick="deleteDoc('${doc.id}')" style="background: var(--text-muted); color: white; border: none; padding: 0.2rem 0.6rem; border-radius: 4px;">Eliminar</button>
+                `;
+                list.appendChild(item);
+            });
+
+            document.getElementById('docsModal').classList.add('open');
+        }
+
+        function closeDocsModal() {
+            document.getElementById('docsModal').classList.remove('open');
+        }
+
+        function addNewDoc() {
+            const name = document.getElementById('newDocName').value;
+            const desc = document.getElementById('newDocDesc').value || 'Documento requerido';
+            
+            if(name) {
+                const id = 'doc_' + Date.now();
+                state.docs.push({ id, name, desc });
+                saveDocsConfig();
+                renderDocs();
+                openDocsModal(); // Refresh list
+                
+                // Clear inputs
+                document.getElementById('newDocName').value = '';
+                document.getElementById('newDocDesc').value = '';
             }
+        }
+
+        function deleteDoc(id) {
+            if(confirm('¿Eliminar este requisito documental?')) {
+                state.docs = state.docs.filter(d => d.id !== id);
+                localStorage.removeItem(`doc_${id}`); // Clean stored file ref
+                saveDocsConfig();
+                renderDocs();
+                openDocsModal(); // Refresh list
+            }
+        }
+
+        function saveDocsConfig() {
+            localStorage.setItem('docsConfig', JSON.stringify(state.docs));
         }
 
         // --- Checkbox Persistence ---
@@ -896,13 +961,14 @@
             const per = document.getElementById('progressPercent');
 
             if(screenId === 'docs') {
-                // For docs, maybe show doc completion? 
-                // Let's count docs
+                // Dynamic docs counting
                 let docsCount = 0;
-                if(localStorage.getItem('doc_licencia')) docsCount++;
-                if(localStorage.getItem('doc_seguro')) docsCount++;
-                if(localStorage.getItem('doc_operador')) docsCount++;
-                const percent = Math.round((docsCount/3)*100);
+                const total = state.docs.length;
+                state.docs.forEach(doc => {
+                    if(localStorage.getItem(`doc_${doc.id}`)) docsCount++;
+                });
+                
+                const percent = total === 0 ? 0 : Math.round((docsCount/total)*100);
                 
                 bar.style.width = `${percent}%`;
                 bar.style.backgroundColor = 'var(--accent)';
@@ -950,16 +1016,18 @@
                 state.links = JSON.parse(savedLinks);
             }
 
+            // Load Docs Config
+            const savedDocs = localStorage.getItem('docsConfig');
+            if(savedDocs) {
+                state.docs = JSON.parse(savedDocs);
+            } else {
+                state.docs = defaultDocs;
+            }
+
             // Load Checkboxes
             document.querySelectorAll('input[type="checkbox"]').forEach(box => {
                 const val = localStorage.getItem(box.dataset.id);
                 if(val === 'true') box.checked = true;
-            });
-
-            // Load Docs
-            ['licencia', 'seguro', 'operador'].forEach(type => {
-                const f = localStorage.getItem(`doc_${type}`);
-                if(f) renderDocState(type, f);
             });
         }
 
