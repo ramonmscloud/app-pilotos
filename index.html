@@ -868,18 +868,55 @@
                     
                     <input type="file" id="${inputId}" class="file-input" style="display:none;" onchange="handleFileUpload('${doc.id}', this)" accept="image/*,.pdf">
                     
-                    <button class="btn-upload" onclick="triggerFileClick('${inputId}')">
+                    <button class="btn-upload" data-action="upload" data-id="${inputId}">
                         Cargar
                     </button>
                     
                     <div class="doc-actions">
-                        <button class="btn-icon btn-view" onclick="viewDoc('${doc.id}')">👁️</button>
-                        <button class="btn-icon btn-edit" onclick="changeDocFile('${doc.id}')">✎</button>
+                        <button class="btn-icon btn-view" data-action="view" data-doc="${doc.id}">👁️</button>
+                        <button class="btn-icon btn-edit" data-action="edit" data-doc="${doc.id}">✎</button>
                     </div>
                 </div>`;
                 container.insertAdjacentHTML('beforeend', html);
             });
             updateProgressHeader('docs');
+            
+            // Setup event delegation after rendering
+            setupDocButtonListeners();
+        }
+        
+        function setupDocButtonListeners() {
+            const container = document.getElementById('docs-container');
+            
+            // Remove previous listener if exists
+            const oldListener = container._clickHandler;
+            if (oldListener) {
+                container.removeEventListener('click', oldListener);
+            }
+            
+            // Add new delegated listener
+            const clickHandler = function(e) {
+                const btn = e.target.closest('button[data-action]');
+                if (!btn) return;
+                
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const action = btn.dataset.action;
+                const docId = btn.dataset.doc;
+                const inputId = btn.dataset.id;
+                
+                if (action === 'upload' && inputId) {
+                    document.getElementById(inputId).click();
+                } else if (action === 'view' && docId) {
+                    viewDoc(docId);
+                } else if (action === 'edit' && docId) {
+                    document.getElementById(`input-${docId}`).click();
+                }
+            };
+            
+            container._clickHandler = clickHandler;
+            container.addEventListener('click', clickHandler);
         }
 
         function triggerFileClick(inputId) {
