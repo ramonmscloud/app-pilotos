@@ -238,7 +238,12 @@
         }
 
         .file-input {
-            display: none;
+            position: absolute;
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            z-index: -1;
         }
 
         .btn-upload {
@@ -1019,7 +1024,12 @@
             // Load Docs Config
             const savedDocs = localStorage.getItem('docsConfig');
             if(savedDocs) {
-                state.docs = JSON.parse(savedDocs);
+                try {
+                    state.docs = JSON.parse(savedDocs);
+                } catch (e) {
+                    console.error('Error parsing docsConfig, resetting to default', e);
+                    state.docs = defaultDocs;
+                }
             } else {
                 state.docs = defaultDocs;
             }
