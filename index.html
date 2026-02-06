@@ -64,6 +64,23 @@
             flex-direction: column;
             transition: background-color 0.3s, color 0.3s;
             overflow: hidden; /* Evitar scroll en body, usar scroll en content */
+            position: relative;
+        }
+
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('logo%20CRA.png');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 60%;
+            opacity: 0.08; /* Marca de agua sutil */
+            pointer-events: none;
+            z-index: 0;
         }
 
         /* --- Header --- */
