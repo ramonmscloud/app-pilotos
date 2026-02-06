@@ -70,20 +70,31 @@
         body::before {
             content: "";
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: url('logo%20CRA.png');
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 80%;
+            background-image: url('logo-cra.png');
             background-repeat: no-repeat;
             background-position: center;
-            background-size: 60%;
-            opacity: 0.08; /* Marca de agua sutil */
+            background-size: contain;
+            opacity: 0.15; /* Marca de agua visible */
             pointer-events: none;
-            z-index: 0;
+            z-index: 1; /* Asegurar que esté por encima del color de fondo */
         }
 
         /* --- Header --- */
+        header {
+            position: relative;
+            background-color: var(--bg-card);
+            padding: 1rem;
+            box-shadow: var(--shadow);
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
         header {
             background-color: var(--bg-card);
             padding: 1rem;
@@ -153,6 +164,7 @@
             padding: 1rem;
             padding-bottom: 5rem; /* Espacio para el nav */
             position: relative;
+            z-index: 2; /* Contenido por encima de la marca de agua */
         }
 
         .screen {
