@@ -273,7 +273,39 @@
         }
 
         .doc-item.loaded .btn-upload {
-            display: none; /* Ocultar botón si ya está cargado */
+            display: none;
+        }
+
+        .doc-actions {
+            display: none;
+            gap: 0.5rem;
+        }
+
+        .doc-item.loaded .doc-actions {
+            display: flex;
+        }
+
+        .btn-icon {
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.4rem;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-main);
+        }
+
+        .btn-view {
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .btn-delete {
+            color: #e53e3e;
+            border-color: #e53e3e;
         }
 
         /* --- Checklist Items --- */
@@ -818,13 +850,16 @@
                         <span class="doc-status" id="status-${doc.id}">${statusText}</span>
                     </div>
                     
-                    <input type="file" id="${inputId}" class="file-input" style="display:none;" onchange="handleFileUpload('${doc.id}', this)">
+                    <input type="file" id="${inputId}" class="file-input" style="display:none;" onchange="handleFileUpload('${doc.id}', this)" accept="image/*,.pdf">
                     
                     <button class="btn-upload" onclick="triggerFileClick('${inputId}')">
                         Cargar
                     </button>
                     
-                    <span class="check-icon">✓</span>
+                    <div class="doc-actions">
+                        <button class="btn-icon btn-view" onclick="viewDoc('${doc.id}')">👁️</button>
+                        <button class="btn-icon btn-delete" onclick="removeDocFile('${doc.id}')">🗑️</button>
+                    </div>
                 </div>`;
                 container.insertAdjacentHTML('beforeend', html);
             });
@@ -837,13 +872,46 @@
 
         function handleFileUpload(id, input) {
             if (input.files && input.files[0]) {
-                const fileName = input.files[0].name;
-                localStorage.setItem(`doc_${id}`, fileName);
+                const file = input.files[0];
+                const fileName = file.name;
                 
-                // Small delay to allow UI to feel responsive
-                setTimeout(() => {
-                   renderDocs(); 
-                }, 100);
+                // Read and save file content
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const result = e.target.result;
+                    try {
+                        localStorage.setItem(`doc_content_${id}`, result);
+                        localStorage.setItem(`doc_mime_${id}`, file.type);
+                        localStorage.setItem(`doc_${id}`, fileName);
+                    } catch (err) {
+                        alert('El archivo es demasiado grande para guardarse en la App. Se guardará solo el nombre.');
+                        localStorage.setItem(`doc_${id}`, fileName); // Save at least the name
+                    }
+                    
+                    setTimeout(() => { renderDocs(); }, 100);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function removeDocFile(id) {
+            if(confirm('¿Eliminar este documento cargado?')) {
+                localStorage.removeItem(`doc_${id}`);
+                localStorage.removeItem(`doc_content_${id}`);
+                localStorage.removeItem(`doc_mime_${id}`);
+                renderDocs();
+            }
+        }
+
+        function viewDoc(id) {
+            const content = localStorage.getItem(`doc_content_${id}`);
+            const mime = localStorage.getItem(`doc_mime_${id}`);
+            
+            if(content && mime) {
+                const win = window.open();
+                win.document.write(`<iframe src="${content}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+            } else {
+                alert('No se puede visualizar el contenido (no se guardó o se borró). Cárgalo de nuevo.');
             }
         }
 
