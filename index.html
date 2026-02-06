@@ -69,19 +69,18 @@
 
         body::before {
             content: "";
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 80%;
-            height: 80%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
             background-image: url('logo-cra.png');
-            background-repeat: no-repeat;
+            background-repeat: repeat; /* Efecto celosía / mosaico */
+            background-size: 80px; /* Tamaño del patrón */
             background-position: center;
-            background-size: contain;
-            opacity: 0.15; /* Marca de agua visible */
+            opacity: 0.06; /* Muy sutil para no interferir */
             pointer-events: none;
-            z-index: 1; /* Asegurar que esté por encima del color de fondo */
+            z-index: 0;
         }
 
         /* --- Header --- */
@@ -164,7 +163,7 @@
             padding: 1rem;
             padding-bottom: 5rem; /* Espacio para el nav */
             position: relative;
-            z-index: 2; /* Contenido por encima de la marca de agua */
+            z-index: 1; /* Contenido por encima de la celosía */
         }
 
         .screen {
