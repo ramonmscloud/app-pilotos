@@ -78,7 +78,7 @@
             background-repeat: repeat; /* Efecto celosía / mosaico */
             background-size: 33.333% 20%; /* 3 columnas x 5 filas exactas en pantalla */
             background-position: center;
-            opacity: 0.06; /* Muy sutil para no interferir */
+            opacity: 1; /* Sin opacidad - totalmente visible */
             pointer-events: none;
             z-index: 0;
         }
@@ -326,6 +326,8 @@
             display: flex;
             align-items: center;
             width: 100%;
+            flex-direction: row-reverse;
+            justify-content: space-between;
         }
 
         .custom-checkbox input {
@@ -340,7 +342,7 @@
             background-color: var(--bg-body);
             border: 2px solid var(--text-muted);
             border-radius: 6px;
-            margin-right: 12px;
+            margin-left: 12px;
             flex-shrink: 0;
             display: flex;
             align-items: center;
@@ -371,6 +373,8 @@
         .item-text {
             font-size: 0.95rem;
             line-height: 1.4;
+            text-align: left;
+            flex: 1;
         }
 
         /* --- Quick Links --- */
@@ -593,6 +597,10 @@
                     <span>☁️</span> <span id="label-link1">Meteo</span>
                     <button class="link-edit" onclick="openEditModal(1, event)">✎</button>
                 </a>
+                <a href="#" target="_blank" class="link-btn" id="link3">
+                    <span>🌤️</span> <span id="label-link3">Meteo</span>
+                    <button class="link-edit" onclick="openEditModal(3, event)">✎</button>
+                </a>
                 <a href="#" target="_blank" class="link-btn" id="link2">
                     <span>🗺️</span> <span id="label-link2">ENAIRE</span>
                     <button class="link-edit" onclick="openEditModal(2, event)">✎</button>
@@ -606,34 +614,109 @@
                 <h3>Checklist Pre-Vuelo</h3>
                 <div class="checklist-group" data-phase="pre">
                     <label class="checklist-item custom-checkbox">
-                        <input type="checkbox" data-id="pre_obj" onchange="updateProgress('pre')">
+                        <input type="checkbox" data-id="pre_01" onchange="updateProgress('pre')">
                         <span class="checkmark"></span>
-                        <span class="item-text">Objetivos y volumen operacional definido</span>
+                        <span class="item-text">Determina los objetivos de la operación.</span>
                     </label>
                     <label class="checklist-item custom-checkbox">
-                        <input type="checkbox" data-id="pre_entorno" onchange="updateProgress('pre')">
+                        <input type="checkbox" data-id="pre_02" onchange="updateProgress('pre')">
                         <span class="checkmark"></span>
-                        <span class="item-text">Evaluación entorno (obs/topo)</span>
+                        <span class="item-text">Se asegura de que el volumen operacional definido y las zonas de prevención son adecuados para la operación prevista.</span>
                     </label>
                     <label class="checklist-item custom-checkbox">
-                        <input type="checkbox" data-id="pre_notam" onchange="updateProgress('pre')">
+                        <input type="checkbox" data-id="pre_03" onchange="updateProgress('pre')">
                         <span class="checkmark"></span>
-                        <span class="item-text">NOTAMs y Espacio Aéreo (>120m)</span>
+                        <span class="item-text">Detecta los obstáculos en el volumen operacional que podrían dificultar la operación.</span>
                     </label>
                     <label class="checklist-item custom-checkbox">
-                        <input type="checkbox" data-id="pre_riesgos" onchange="updateProgress('pre')">
+                        <input type="checkbox" data-id="pre_04" onchange="updateProgress('pre')">
                         <span class="checkmark"></span>
-                        <span class="item-text">Gestión riesgos y zona terrestre</span>
+                        <span class="item-text">Determina si la topografía u obstáculos pueden afectar a la velocidad o dirección del viento.</span>
                     </label>
                     <label class="checklist-item custom-checkbox">
-                        <input type="checkbox" data-id="pre_insp" onchange="updateProgress('pre')">
+                        <input type="checkbox" data-id="pre_05" onchange="updateProgress('pre')">
                         <span class="checkmark"></span>
-                        <span class="item-text">Inspección visual UAS (fijaciones)</span>
+                        <span class="item-text">Selecciona los datos pertinentes de la información sobre el espacio aéreo (por ejemplo, sobre las zonas geográficas de UAS) que puedan tener consecuencias sobre la operación prevista.</span>
                     </label>
                     <label class="checklist-item custom-checkbox">
-                        <input type="checkbox" data-id="pre_failsafe" onchange="updateProgress('pre')">
+                        <input type="checkbox" data-id="pre_06" onchange="updateProgress('pre')">
                         <span class="checkmark"></span>
-                        <span class="item-text">Config. Fail-safe y Geografía</span>
+                        <span class="item-text">Se asegura de que el UAS es adecuado para la operación.</span>
+                    </label>
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="pre_07" onchange="updateProgress('pre')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Se asegura de que la carga útil seleccionada es compatible con el UAS empleado.</span>
+                    </label>
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="pre_08" onchange="updateProgress('pre')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Aplica las medidas necesarias para cumplir con las limitaciones y condiciones aplicables a los volúmenes definidos para el escenario autorizado (activación del sistema de geocaging y aseguramiento de la acotación de la zona terrestre controlada).</span>
+                    </label>
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="pre_09" onchange="updateProgress('pre')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Aplica los procedimientos necesarios para el vuelo de UAS en el espacio aéreo controlado (modelos EARO, comunicaciones con el proveedor de servicios de tránsito aéreo).</span>
+                    </label>
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="pre_10" onchange="updateProgress('pre')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Confirma que están disponibles en el lugar todos los documentos necesarios para la operación prevista (registro de operador, certificados de piloto a distancia, póliza de seguro, Manual de Operaciones, evidencias de coordinación necesarias...).</span>
+                    </label>
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="pre_11" onchange="updateProgress('pre')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Informa a los participantes sobre la operación prevista y la aceptación de los riesgos de la operación.</span>
+                    </label>
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="pre_12" onchange="updateProgress('pre')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Evalúa el estado general del UAS.</span>
+                    </label>
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="pre_13" onchange="updateProgress('pre')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Garantiza que todos los componentes amovibles del UAS están fijados adecuadamente.</span>
+                    </label>
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="pre_14" onchange="updateProgress('pre')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Se asegura de que las configuraciones del software del UAS son compatibles y están actualizadas.</span>
+                    </label>
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="pre_15" onchange="updateProgress('pre')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Calibra los instrumentos del UAS.</span>
+                    </label>
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="pre_16" onchange="updateProgress('pre')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Detecta cualquier fallo que pueda comprometer la operación (baterías defectuosas, hélices en mal estado...).</span>
+                    </label>
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="pre_17" onchange="updateProgress('pre')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Se asegura de que el nivel de carga de la batería, de la unidad de mando y de la UA es suficiente para la operación prevista.</span>
+                    </label>
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="pre_18" onchange="updateProgress('pre')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Se asegura de que el sistema de terminación de vuelo del UAS y su sistema de activación están operacionales (configura los diferentes modos de RTH, FAIL SAFE, ALTÍMETRO).</span>
+                    </label>
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="pre_19" onchange="updateProgress('pre')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Comprueba el correcto funcionamiento del enlace de mando y control.</span>
+                    </label>
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="pre_20" onchange="updateProgress('pre')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Establece los sistemas de limitación de la altura y la velocidad.</span>
+                    </label>
+                    <label class="checklist-item custom-checkbox">
+                        <input type="checkbox" data-id="pre_21" onchange="updateProgress('pre')">
+                        <span class="checkmark"></span>
+                        <span class="item-text">Activa la función de geoconsciencia y carga la información (si está disponible esta función).</span>
                     </label>
                 </div>
             </div>
@@ -705,6 +788,18 @@
                 <button class="btn-reset" onclick="resetApp()">Reiniciar Jornada (Reset Checks)</button>
             </div>
         </section>
+
+        <!-- Pantalla 5: Acerca de -->
+        <section id="screen-about" class="screen">
+            <div class="card">
+                <h3>Acerca de</h3>
+                <div style="padding: 1rem 0; line-height: 1.8; text-align: center;">
+                    <p style="font-size: 1.1rem; margin-bottom: 1.5rem;">📱 <strong>App para ayuda de Pilotos de Aeromodelismo CRA</strong></p>
+                    <p style="font-size: 0.95rem; color: var(--text-muted);">Open Source</p>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2rem;">Desarrollada para facilitar la gestión de operaciones con UAS cumpliendo la normativa vigente.</p>
+                </div>
+            </div>
+        </section>
     </main>
 
     <nav class="bottom-nav">
@@ -723,6 +818,10 @@
         <button class="nav-item" onclick="switchTab('post', this)">
             <span class="nav-icon">🏁</span>
             <span>Post</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('about', this)">
+            <span class="nav-icon">ℹ️</span>
+            <span>Acerca de</span>
         </button>
     </nav>
 
@@ -791,7 +890,8 @@
         const state = {
             currentTab: 'docs',
             links: {
-                link1: { name: 'Meteo (CRA/AEMET)', url: 'https://www.aemet.es/' },
+                link1: { name: 'Meteo (CRA)', url: 'https://www.windguru.cz/690862' },
+                link3: { name: 'Meteo (AEMET)', url: 'https://www.aemet.es/es/eltiempo/prediccion/municipios/san-vicente-del-raspeig-sant-vicent-del-raspeig-id03122' },
                 link2: { name: 'ENAIRE Drones', url: 'https://drones.enaire.es/' }
             },
             editingLinkId: null,
@@ -826,7 +926,7 @@
             if(btn) btn.classList.add('active');
             else {
                 // Find button by index mapping if simple call
-                const index = ['docs', 'pre', 'flight', 'post'].indexOf(screenId);
+                const index = ['docs', 'pre', 'flight', 'post', 'about'].indexOf(screenId);
                 const navItems = document.querySelectorAll('.nav-item');
                 if(navItems[index]) navItems[index].classList.add('active');
             }
@@ -1110,7 +1210,7 @@
         }
 
         function renderLinks() {
-            for (let i = 1; i <= 2; i++) {
+            [1, 2, 3].forEach(i => {
                 const link = state.links[`link${i}`];
                 const el = document.getElementById(`link${i}`);
                 const label = document.getElementById(`label-link${i}`);
@@ -1119,7 +1219,7 @@
                     el.href = link.url;
                     label.textContent = link.name;
                 }
-            }
+            });
         }
         
         function viewLocalImage() {
