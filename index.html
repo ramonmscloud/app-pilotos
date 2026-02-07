@@ -474,13 +474,20 @@
         }
 
         .btn-reset {
-            background-color: transparent;
-            border: 1px solid var(--text-muted);
-            color: var(--text-muted);
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
+            background-color: var(--primary);
+            border: 2px solid var(--primary);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
             cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-reset:active {
+            background-color: var(--primary-dark);
+            border-color: var(--primary-dark);
         }
 
         /* --- Modal for editing links --- */
@@ -876,7 +883,7 @@
                 <h3 style="margin: 0; font-size: 1rem;">Visor de Documentos</h3>
                 <button onclick="closeViewer()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
             </div>
-            <div id="viewerBody" style="flex: 1; overflow: auto; padding: 1rem; text-align: center; background: #000;">
+            <div id="viewerBody" style="flex: 1; overflow: auto; padding: 1rem; text-align: center; background: #000; touch-action: pan-x pan-y pinch-zoom; position: relative;">
                 <!-- Content goes here -->
             </div>
             <div style="padding: 1rem; border-top: 1px solid var(--border); background: var(--bg-card); text-align: center;">
@@ -1083,6 +1090,10 @@
                     img.style.height = 'auto';
                     img.style.display = 'block';
                     img.style.margin = '0 auto';
+                    img.style.cursor = 'zoom-in';
+                    img.style.transition = 'transform 0.3s ease';
+                    img.style.transformOrigin = 'center center';
+                    addZoomToImage(img);
                     viewerBody.appendChild(img);
                 } else if (mime === 'application/pdf') {
                     // PDF handling for mobile is tricky, usually embed or object works best for inline if supported
@@ -1232,12 +1243,137 @@
             img.style.height = 'auto';
             img.style.display = 'block';
             img.style.margin = '0 auto';
+            img.style.cursor = 'zoom-in';
+            img.style.transition = 'transform 0.3s ease';
+            img.style.transformOrigin = 'center center';
             img.onerror = function() {
                 viewerBody.innerHTML = '<p style="color:white">Error: No se pudo cargar la imagen CRA zona de vuelo.jpeg</p>';
             };
+            addZoomToImage(img);
             viewerBody.appendChild(img);
             
             document.getElementById('viewerModal').classList.add('open');
+        }
+
+        // --- Zoom functionality for images ---
+        function addZoomToImage(img) {
+            let scale = 1;
+            let panning = false;
+            let pointX = 0;
+            let pointY = 0;
+            let start = { x: 0, y: 0 };
+            let lastTap = 0;
+            
+            // Double tap to zoom
+            img.addEventListener('click', function(e) {
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - lastTap;
+                
+                if (tapLength < 300 && tapLength > 0) {
+                    // Double tap detected
+                    if (scale === 1) {
+                        scale = 2.5;
+                        img.style.cursor = 'zoom-out';
+                    } else {
+                        scale = 1;
+                        pointX = 0;
+                        pointY = 0;
+                        img.style.cursor = 'zoom-in';
+                    }
+                    setTransform();
+                    e.preventDefault();
+                }
+                lastTap = currentTime;
+            });
+            
+            // Mouse wheel zoom
+            img.addEventListener('wheel', function(e) {
+                e.preventDefault();
+                const xs = (e.clientX - pointX) / scale;
+                const ys = (e.clientY - pointY) / scale;
+                const delta = e.deltaY > 0 ? -0.2 : 0.2;
+                
+                scale += delta;
+                scale = Math.min(Math.max(0.5, scale), 5);
+                
+                pointX = e.clientX - xs * scale;
+                pointY = e.clientY - ys * scale;
+                
+                img.style.cursor = scale > 1 ? 'zoom-out' : 'zoom-in';
+                setTransform();
+            });
+            
+            // Touch zoom (pinch)
+            let initialDistance = 0;
+            let initialScale = 1;
+            
+            img.addEventListener('touchstart', function(e) {
+                if (e.touches.length === 2) {
+                    initialDistance = getDistance(e.touches);
+                    initialScale = scale;
+                } else if (e.touches.length === 1 && scale > 1) {
+                    panning = true;
+                    start = { x: e.touches[0].clientX - pointX, y: e.touches[0].clientY - pointY };
+                }
+            });
+            
+            img.addEventListener('touchmove', function(e) {
+                if (e.touches.length === 2) {
+                    e.preventDefault();
+                    const currentDistance = getDistance(e.touches);
+                    scale = initialScale * (currentDistance / initialDistance);
+                    scale = Math.min(Math.max(0.5, scale), 5);
+                    img.style.cursor = scale > 1 ? 'zoom-out' : 'zoom-in';
+                    setTransform();
+                } else if (panning && e.touches.length === 1) {
+                    e.preventDefault();
+                    pointX = e.touches[0].clientX - start.x;
+                    pointY = e.touches[0].clientY - start.y;
+                    setTransform();
+                }
+            });
+            
+            img.addEventListener('touchend', function() {
+                panning = false;
+            });
+            
+            // Mouse pan when zoomed
+            img.addEventListener('mousedown', function(e) {
+                if (scale > 1) {
+                    e.preventDefault();
+                    panning = true;
+                    start = { x: e.clientX - pointX, y: e.clientY - pointY };
+                    img.style.cursor = 'grabbing';
+                }
+            });
+            
+            img.addEventListener('mousemove', function(e) {
+                if (panning) {
+                    e.preventDefault();
+                    pointX = e.clientX - start.x;
+                    pointY = e.clientY - start.y;
+                    setTransform();
+                }
+            });
+            
+            img.addEventListener('mouseup', function() {
+                panning = false;
+                img.style.cursor = scale > 1 ? 'zoom-out' : 'zoom-in';
+            });
+            
+            img.addEventListener('mouseleave', function() {
+                panning = false;
+            });
+            
+            function setTransform() {
+                img.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`;
+            }
+            
+            function getDistance(touches) {
+                const dx = touches[0].clientX - touches[1].clientX;
+                const dy = touches[0].clientY - touches[1].clientY;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
         }
 
         // --- Progress Logic ---
