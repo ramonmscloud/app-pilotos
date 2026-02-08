@@ -650,63 +650,6 @@
                         <button class="theme-toggle" onclick="app.toggleTheme()">${themeIcon}</button>
                     </div>
 
-                    <!-- Estadísticas -->
-                    <div class="grid-2">
-                        <div class="stat-card">
-                            <div class="stat-value">${stats.totalModels}</div>
-                            <div class="stat-label">Aeromodelos</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value">${stats.totalFlights}</div>
-                            <div class="stat-label">Vuelos Totales</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value">${stats.totalFlightTime}</div>
-                            <div class="stat-label">Minutos de Vuelo</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value">${(stats.totalFlightTime / 60).toFixed(1)}</div>
-                            <div class="stat-label">Horas de Vuelo</div>
-                        </div>
-                    </div>
-
-                    <!-- Botones de acción -->
-                    <div class="card">
-                        <div class="button-group">
-                            <button class="btn btn-primary" onclick="app.showAddModelModal()">
-                                ➕ Nuevo Aeromodelo
-                            </button>
-                            <button class="btn btn-success" onclick="app.exportData()">
-                                💾 Exportar Datos
-                            </button>
-                            <button class="btn btn-secondary" onclick="app.importData()">
-                                📁 Importar Datos
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Últimos vuelos -->
-                    ${stats.recentFlights.length > 0 ? `
-                        <div class="card">
-                            <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: var(--primary);">
-                                📋 Últimos 5 Vuelos
-                            </h2>
-                            ${stats.recentFlights.map(flight => `
-                                <div class="flight-row">
-                                    <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 0.5rem;">
-                                        <div>
-                                            <div style="font-weight: 600; color: var(--primary);">${flight.modelName}</div>
-                                            <div style="font-size: 0.875rem; color: var(--text-muted);">
-                                                ${this.formatDateTime(flight.dateTime)} • ${flight.duration} min
-                                            </div>
-                                        </div>
-                                        ${this.renderResultBadge(flight.result)}
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    ` : ''}
-
                     <!-- Listado de Aeromodelos -->
                     <div class="card">
                         <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: var(--primary);">
@@ -740,7 +683,66 @@
                                 `).join('')}
                             </div>
                         `}
+                        <div style="margin-top: 1.5rem;">
+                            <button class="btn btn-primary" onclick="app.showAddModelModal()" style="width: 100%;">
+                                ➕ Nuevo Aeromodelo
+                            </button>
+                        </div>
                     </div>
+
+                    <!-- Estadísticas -->
+                    <div class="grid-2">
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.totalModels}</div>
+                            <div class="stat-label">Aeromodelos</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.totalFlights}</div>
+                            <div class="stat-label">Vuelos Totales</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.totalFlightTime}</div>
+                            <div class="stat-label">Minutos de Vuelo</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${(stats.totalFlightTime / 60).toFixed(1)}</div>
+                            <div class="stat-label">Horas de Vuelo</div>
+                        </div>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="card">
+                        <div class="button-group">
+                            <button class="btn btn-success" onclick="app.exportData()">
+                                💾 Exportar Datos
+                            </button>
+                            <button class="btn btn-secondary" onclick="app.importData()">
+                                📁 Importar Datos
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Últimos vuelos -->
+                    ${stats.recentFlights.length > 0 ? `
+                        <div class="card">
+                            <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: var(--primary);">
+                                📋 Últimos 5 Vuelos
+                            </h2>
+                            ${stats.recentFlights.map(flight => `
+                                <div class="flight-row">
+                                    <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 0.5rem;">
+                                        <div>
+                                            <div style="font-weight: 600; color: var(--primary);">${flight.modelName}</div>
+                                            <div style="font-size: 0.875rem; color: var(--text-muted);">
+                                                ${this.formatDateTime(flight.dateTime)} • ${flight.duration} min
+                                            </div>
+                                        </div>
+                                        ${this.renderResultBadge(flight.result)}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
                 `;
             }
 
