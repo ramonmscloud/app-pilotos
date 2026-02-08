@@ -115,7 +115,15 @@
         }
 
         .icon-plane {
-            transform: rotate(-45deg);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-plane img {
+            width: 28px;
+            height: 28px;
+            object-fit: contain;
         }
 
         .theme-toggle {
@@ -564,7 +572,7 @@
 <body>
 
     <header>
-        <h1><span class="icon-plane">✈️</span> UAS Manager</h1>
+        <h1><span class="icon-plane"><img src="logo-cra.png" alt="CRA Logo"></span> UAS Manager</h1>
         <button class="theme-toggle" id="themeToggle">🌙</button>
     </header>
     
