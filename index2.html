@@ -583,10 +583,10 @@
                     <div class="modal-title">💾 Exportar Datos</div>
                     <p style="margin-bottom: 1.5rem; color: var(--text-muted);">Selecciona el formato de exportación:</p>
                     <div class="button-group">
-                        <button class="btn btn-primary" onclick="app.exportAsJSON(); app.closeModal();" style="width: 100%;">
+                        <button class="btn btn-primary" onclick="app.handleExportJSON(event)" style="width: 100%;">
                             📄 Exportar como JSON
                         </button>
-                        <button class="btn btn-success" onclick="app.exportAsCSV(); app.closeModal();" style="width: 100%;">
+                        <button class="btn btn-success" onclick="app.handleExportCSV(event)" style="width: 100%;">
                             📊 Exportar como CSV/Excel
                         </button>
                         <button class="btn btn-secondary" onclick="app.closeModal()" style="width: 100%;">
@@ -594,6 +594,18 @@
                         </button>
                     </div>
                 `);
+            }
+
+            handleExportJSON(event) {
+                if (event) event.preventDefault();
+                this.closeModal();
+                setTimeout(() => this.exportAsJSON(), 100);
+            }
+
+            handleExportCSV(event) {
+                if (event) event.preventDefault();
+                this.closeModal();
+                setTimeout(() => this.exportAsCSV(), 100);
             }
 
             exportAsJSON() {
@@ -660,7 +672,7 @@
                     <div class="modal-title">📁 Importar Datos</div>
                     <p style="margin-bottom: 1.5rem; color: var(--text-muted);">Selecciona el formato a importar:</p>
                     <div class="button-group">
-                        <button class="btn btn-primary" onclick="app.importFromJSON(); app.closeModal();" style="width: 100%;">
+                        <button class="btn btn-primary" onclick="app.handleImportJSON(event)" style="width: 100%;">
                             📄 Importar desde JSON
                         </button>
                         <button class="btn btn-secondary" onclick="app.closeModal()" style="width: 100%;">
@@ -671,6 +683,12 @@
                         ⚠️ Nota: La importación desde CSV no está soportada. Usa el formato JSON.
                     </p>
                 `);
+            }
+
+            handleImportJSON(event) {
+                if (event) event.preventDefault();
+                this.closeModal();
+                setTimeout(() => this.importFromJSON(), 100);
             }
 
             importFromJSON() {
