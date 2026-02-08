@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- PWA / Mobile Web App Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Libro de Vuelos">
+    <meta name="theme-color" content="#2c5282">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✈️</text></svg>">
+    
+    <title>Libro de Registro de Vuelos - CRA</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        :root {
+            /* Colores Tema Claro (Aeronáutico/Profesional) */
+            --bg-body: #f4f6f8;
+            --bg-card: #ffffff;
+            --text-main: #1a202c;
+            --text-muted: #718096;
+            --primary: #2c5282;
+            --primary-dark: #1a365d;
+            --accent: #3182ce;
+            --success: #38a169;
+            --warning: #d69e2e;
+            --danger: #e53e3e;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        [data-theme="dark"] {
+            /* Colores Tema Oscuro (Cabina Nocturna) */
+            --bg-body: #1a202c;
+            --bg-card: #2d3748;
+            --text-main: #f7fafc;
+            --text-muted: #a0aec0;
+            --primary: #63b3ed;
+            --primary-dark: #4299e1;
+            --accent: #4fd1c5;
+            --success: #48bb78;
+            --warning: #f6ad55;
+            --danger: #fc8181;
+            --border: #4a5568;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+            position: relative;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('logo-cra.png');
+            background-repeat: repeat;
+            background-size: 33.333% 20%;
+            background-position: center;
+            opacity: 0.45;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .app-container {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .btn {
+            padding: 0.875rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            font-size: 1rem;
+            min-height: 48px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            opacity: 0.9;
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            opacity: 0.9;
+        }
+
+        .btn-secondary {
+            background-color: var(--border);
+            color: var(--text-main);
+        }
+
+        .btn-secondary:hover {
+            opacity: 0.8;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 0.875rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            background-color: var(--bg-card);
+            color: var(--text-main);
+            min-height: 48px;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        textarea.input-field {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 1.25rem;
+            text-align: center;
+            box-shadow: var(--shadow);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+
+        .model-card {
+            border-left: 4px solid var(--primary);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .model-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 12px -2px rgba(0, 0, 0, 0.15);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background-color: rgba(56, 161, 105, 0.2);
+            color: var(--success);
+        }
+
+        .badge-warning {
+            background-color: rgba(214, 158, 46, 0.2);
+            color: var(--warning);
+        }
+
+        .badge-danger {
+            background-color: rgba(229, 62, 62, 0.2);
+            color: var(--danger);
+        }
+
+        .flight-row {
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 0;
+        }
+
+        .flight-row:last-child {
+            border-bottom: none;
+        }
+
+        .maintenance-highlight {
+            background-color: rgba(56, 161, 105, 0.1);
+            border-left: 4px solid var(--success);
+            padding: 0.75rem;
+            border-radius: 4px;
+            margin: 0.5rem 0;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 0;
+        }
+
+        .checkbox {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .header-bar {
+            background-color: var(--bg-card);
+            padding: 1rem 1.5rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 1.5rem;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 0.5rem;
+            cursor: pointer;
+            font-size: 1.5rem;
+            min-height: 48px;
+            min-width: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .back-button {
+            background-color: var(--border);
+            color: var(--text-main);
+            border: none;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            min-height: 48px;
+        }
+
+        .back-button:hover {
+            opacity: 0.8;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+
+        .modal-content {
+            background-color: var(--bg-card);
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: var(--primary);
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 640px) {
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+
+            .header-bar {
+                flex-direction: column;
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container" id="app">
+        <!-- El contenido se generará dinámicamente con JavaScript -->
+    </div>
+
+    <script>
+        // ============================================
+        // GESTIÓN DE DATOS Y ESTADO
+        // ============================================
+
+        class FlightLogApp {
+            constructor() {
+                this.models = this.loadData('aeromodels') || [];
+                this.currentView = 'dashboard';
+                this.currentModelId = null;
+                this.theme = this.detectTheme();
+                this.init();
+            }
+
+            init() {
+                this.applyTheme();
+                this.render();
+            }
+
+            // Detección automática del tema del sistema
+            detectTheme() {
+                const savedTheme = localStorage.getItem('theme');
+                if (savedTheme) return savedTheme;
+                
+                return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches 
+                    ? 'dark' 
+                    : 'light';
+            }
+
+            applyTheme() {
+                if (this.theme === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                } else {
+                    document.documentElement.removeAttribute('data-theme');
+                }
+                localStorage.setItem('theme', this.theme);
+            }
+
+            toggleTheme() {
+                this.theme = this.theme === 'light' ? 'dark' : 'light';
+                this.applyTheme();
+                this.render();
+            }
+
+            // Gestión de LocalStorage
+            loadData(key) {
+                try {
+                    const data = localStorage.getItem(key);
+                    return data ? JSON.parse(data) : null;
+                } catch (e) {
+                    console.error('Error loading data:', e);
+                    return null;
+                }
+            }
+
+            saveData(key, data) {
+                try {
+                    localStorage.setItem(key, JSON.stringify(data));
+                } catch (e) {
+                    console.error('Error saving data:', e);
+                    alert('Error al guardar los datos. Verifica el espacio disponible.');
+                }
+            }
+
+            // CRUD Aeromodelos
+            addModel(name, description, observations) {
+                const model = {
+                    id: Date.now().toString(),
+                    name: name.trim(),
+                    description: description.trim(),
+                    observations: observations.trim(),
+                    flights: [],
+                    createdAt: new Date().toISOString()
+                };
+                this.models.push(model);
+                this.saveData('aeromodels', this.models);
+                return model;
+            }
+
+            updateModel(id, name, description, observations) {
+                const model = this.models.find(m => m.id === id);
+                if (model) {
+                    model.name = name.trim();
+                    model.description = description.trim();
+                    model.observations = observations.trim();
+                    this.saveData('aeromodels', this.models);
+                }
+            }
+
+            deleteModel(id) {
+                const confirmed = confirm('¿Estás seguro de eliminar este aeromodelo y todo su historial de vuelos?');
+                if (confirmed) {
+                    this.models = this.models.filter(m => m.id !== id);
+                    this.saveData('aeromodels', this.models);
+                    this.showDashboard();
+                }
+            }
+
+            getModel(id) {
+                return this.models.find(m => m.id === id);
+            }
+
+            // CRUD Vuelos
+            addFlight(modelId, duration, maintenanceChecked, maintenanceNotes, fuelUsed, result, notes) {
+                const model = this.getModel(modelId);
+                if (model) {
+                    const flight = {
+                        id: Date.now().toString(),
+                        dateTime: new Date().toISOString(),
+                        duration: parseInt(duration) || 0,
+                        maintenanceChecked: maintenanceChecked,
+                        maintenanceNotes: maintenanceNotes.trim(),
+                        fuelUsed: fuelUsed.trim(),
+                        result: result,
+                        notes: notes.trim()
+                    };
+                    model.flights.unshift(flight); // Añadir al principio
+                    this.saveData('aeromodels', this.models);
+                    return flight;
+                }
+            }
+
+            deleteFlight(modelId, flightId) {
+                const model = this.getModel(modelId);
+                if (model) {
+                    const confirmed = confirm('¿Estás seguro de eliminar este registro de vuelo?');
+                    if (confirmed) {
+                        model.flights = model.flights.filter(f => f.id !== flightId);
+                        this.saveData('aeromodels', this.models);
+                        this.render();
+                    }
+                }
+            }
+
+            // Estadísticas
+            getStats() {
+                const totalModels = this.models.length;
+                const totalFlights = this.models.reduce((sum, m) => sum + m.flights.length, 0);
+                const totalFlightTime = this.models.reduce((sum, m) => {
+                    return sum + m.flights.reduce((s, f) => s + f.duration, 0);
+                }, 0);
+
+                // Últimos 5 vuelos de todos los modelos
+                const allFlights = [];
+                this.models.forEach(model => {
+                    model.flights.forEach(flight => {
+                        allFlights.push({
+                            ...flight,
+                            modelName: model.name,
+                            modelId: model.id
+                        });
+                    });
+                });
+                allFlights.sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
+                const recentFlights = allFlights.slice(0, 5);
+
+                return {
+                    totalModels,
+                    totalFlights,
+                    totalFlightTime,
+                    recentFlights
+                };
+            }
+
+            // Exportar/Importar
+            exportData() {
+                const data = {
+                    version: '1.0',
+                    exportDate: new Date().toISOString(),
+                    models: this.models
+                };
+                const jsonString = JSON.stringify(data, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `libro-vuelos-backup-${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+
+            importData() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'application/json';
+                input.onchange = (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            try {
+                                const data = JSON.parse(event.target.result);
+                                if (data.models && Array.isArray(data.models)) {
+                                    const confirmed = confirm('¿Estás seguro de importar estos datos? Esto reemplazará todos los datos actuales.');
+                                    if (confirmed) {
+                                        this.models = data.models;
+                                        this.saveData('aeromodels', this.models);
+                                        this.showDashboard();
+                                        alert('Datos importados correctamente');
+                                    }
+                                } else {
+                                    alert('Archivo JSON no válido');
+                                }
+                            } catch (error) {
+                                alert('Error al leer el archivo: ' + error.message);
+                            }
+                        };
+                        reader.readAsText(file);
+                    }
+                };
+                input.click();
+            }
+
+            // Navegación
+            showDashboard() {
+                this.currentView = 'dashboard';
+                this.render();
+            }
+
+            showModelDetail(modelId) {
+                this.currentView = 'model-detail';
+                this.currentModelId = modelId;
+                this.render();
+            }
+
+            // Renderizado principal
+            render() {
+                const appContainer = document.getElementById('app');
+                
+                if (this.currentView === 'dashboard') {
+                    appContainer.innerHTML = this.renderDashboard();
+                } else if (this.currentView === 'model-detail') {
+                    appContainer.innerHTML = this.renderModelDetail();
+                }
+            }
+
+            // ============================================
+            // RENDERIZADO DE VISTAS
+            // ============================================
+
+            renderDashboard() {
+                const stats = this.getStats();
+                const themeIcon = this.theme === 'light' ? '🌙' : '☀️';
+
+                return `
+                    <div class="header-bar">
+                        <div class="header-title">
+                            <span style="transform: rotate(-45deg); display: inline-block;">✈️</span>
+                            Libro de Registro de Vuelos
+                        </div>
+                        <button class="theme-toggle" onclick="app.toggleTheme()">${themeIcon}</button>
+                    </div>
+
+                    <!-- Estadísticas -->
+                    <div class="grid-2">
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.totalModels}</div>
+                            <div class="stat-label">Aeromodelos</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.totalFlights}</div>
+                            <div class="stat-label">Vuelos Totales</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.totalFlightTime}</div>
+                            <div class="stat-label">Minutos de Vuelo</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${(stats.totalFlightTime / 60).toFixed(1)}</div>
+                            <div class="stat-label">Horas de Vuelo</div>
+                        </div>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="card">
+                        <div class="button-group">
+                            <button class="btn btn-primary" onclick="app.showAddModelModal()">
+                                ➕ Nuevo Aeromodelo
+                            </button>
+                            <button class="btn btn-success" onclick="app.exportData()">
+                                💾 Exportar Datos
+                            </button>
+                            <button class="btn btn-secondary" onclick="app.importData()">
+                                📁 Importar Datos
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Últimos vuelos -->
+                    ${stats.recentFlights.length > 0 ? `
+                        <div class="card">
+                            <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: var(--primary);">
+                                📋 Últimos 5 Vuelos
+                            </h2>
+                            ${stats.recentFlights.map(flight => `
+                                <div class="flight-row">
+                                    <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 0.5rem;">
+                                        <div>
+                                            <div style="font-weight: 600; color: var(--primary);">${flight.modelName}</div>
+                                            <div style="font-size: 0.875rem; color: var(--text-muted);">
+                                                ${this.formatDateTime(flight.dateTime)} • ${flight.duration} min
+                                            </div>
+                                        </div>
+                                        ${this.renderResultBadge(flight.result)}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+
+                    <!-- Listado de Aeromodelos -->
+                    <div class="card">
+                        <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: var(--primary);">
+                            🛩️ Mis Aeromodelos
+                        </h2>
+                        ${this.models.length === 0 ? `
+                            <div class="empty-state">
+                                <div class="empty-state-icon">✈️</div>
+                                <p style="font-size: 1.125rem; margin-bottom: 0.5rem;">No tienes aeromodelos registrados</p>
+                                <p style="font-size: 0.875rem;">Pulsa "Nuevo Aeromodelo" para comenzar</p>
+                            </div>
+                        ` : `
+                            <div style="display: grid; gap: 1rem;">
+                                ${this.models.map(model => `
+                                    <div class="card model-card" onclick="app.showModelDetail('${model.id}')" style="margin-bottom: 0;">
+                                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                                            <div style="flex: 1;">
+                                                <h3 style="font-size: 1.125rem; font-weight: 700; margin: 0 0 0.5rem 0;">
+                                                    ${model.name}
+                                                </h3>
+                                                <p style="color: var(--text-muted); margin: 0 0 0.5rem 0; font-size: 0.875rem;">
+                                                    ${model.description || 'Sin descripción'}
+                                                </p>
+                                                <div style="font-size: 0.875rem; color: var(--text-muted);">
+                                                    📊 ${model.flights.length} vuelos registrados
+                                                </div>
+                                            </div>
+                                            <div style="font-size: 2rem;">✈️</div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `}
+                    </div>
+                `;
+            }
+
+            renderModelDetail() {
+                const model = this.getModel(this.currentModelId);
+                if (!model) {
+                    this.showDashboard();
+                    return '';
+                }
+
+                const totalFlights = model.flights.length;
+                const totalMinutes = model.flights.reduce((sum, f) => sum + f.duration, 0);
+                const themeIcon = this.theme === 'light' ? '🌙' : '☀️';
+
+                return `
+                    <div class="header-bar">
+                        <button class="back-button" onclick="app.showDashboard()">
+                            ← Volver
+                        </button>
+                        <button class="theme-toggle" onclick="app.toggleTheme()">${themeIcon}</button>
+                    </div>
+
+                    <!-- Información del modelo -->
+                    <div class="card" style="border-left: 4px solid var(--primary);">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                            <h1 style="font-size: 1.75rem; font-weight: 700; margin: 0; color: var(--primary);">
+                                ✈️ ${model.name}
+                            </h1>
+                        </div>
+                        
+                        <div style="margin-bottom: 1rem;">
+                            <strong style="color: var(--text-muted); font-size: 0.875rem;">Descripción:</strong>
+                            <p style="margin: 0.25rem 0;">${model.description || 'Sin descripción'}</p>
+                        </div>
+                        
+                        ${model.observations ? `
+                            <div style="margin-bottom: 1rem;">
+                                <strong style="color: var(--text-muted); font-size: 0.875rem;">Observaciones:</strong>
+                                <p style="margin: 0.25rem 0;">${model.observations}</p>
+                            </div>
+                        ` : ''}
+
+                        <div class="grid-2" style="margin: 1.5rem 0;">
+                            <div style="text-align: center; padding: 1rem; background-color: var(--bg-body); border-radius: 8px;">
+                                <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">${totalFlights}</div>
+                                <div style="font-size: 0.875rem; color: var(--text-muted);">Vuelos</div>
+                            </div>
+                            <div style="text-align: center; padding: 1rem; background-color: var(--bg-body); border-radius: 8px;">
+                                <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">${(totalMinutes / 60).toFixed(1)}h</div>
+                                <div style="font-size: 0.875rem; color: var(--text-muted);">${totalMinutes} minutos</div>
+                            </div>
+                        </div>
+
+                        <div class="button-group">
+                            <button class="btn btn-primary" onclick="app.showAddFlightModal('${model.id}')">
+                                ➕ Registrar Vuelo
+                            </button>
+                            <button class="btn btn-secondary" onclick="app.showEditModelModal('${model.id}')">
+                                ✏️ Editar
+                            </button>
+                            <button class="btn btn-danger" onclick="app.deleteModel('${model.id}')">
+                                🗑️ Eliminar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Historial de vuelos -->
+                    <div class="card">
+                        <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: var(--primary);">
+                            📋 Historial de Vuelos
+                        </h2>
+                        
+                        ${model.flights.length === 0 ? `
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📝</div>
+                                <p style="font-size: 1.125rem; margin-bottom: 0.5rem;">No hay vuelos registrados</p>
+                                <p style="font-size: 0.875rem;">Pulsa "Registrar Vuelo" para añadir uno</p>
+                            </div>
+                        ` : `
+                            <div>
+                                ${model.flights.map(flight => `
+                                    <div class="flight-row">
+                                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+                                            <div>
+                                                <div style="font-weight: 600; font-size: 1.125rem;">
+                                                    ${this.formatDateTime(flight.dateTime)}
+                                                </div>
+                                                <div style="font-size: 0.875rem; color: var(--text-muted);">
+                                                    ⏱️ Duración: ${flight.duration} minutos
+                                                </div>
+                                            </div>
+                                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                                ${this.renderResultBadge(flight.result)}
+                                                <button 
+                                                    onclick="app.deleteFlight('${model.id}', '${flight.id}')" 
+                                                    style="background: none; border: none; cursor: pointer; font-size: 1.25rem; padding: 0.25rem;"
+                                                    title="Eliminar vuelo"
+                                                >🗑️</button>
+                                            </div>
+                                        </div>
+
+                                        ${flight.maintenanceChecked ? `
+                                            <div class="maintenance-highlight">
+                                                <div style="font-weight: 600; margin-bottom: 0.25rem;">
+                                                    ✅ Mantenimiento Prevuelo Realizado
+                                                </div>
+                                                ${flight.maintenanceNotes ? `
+                                                    <div style="font-size: 0.875rem;">${flight.maintenanceNotes}</div>
+                                                ` : ''}
+                                            </div>
+                                        ` : ''}
+
+                                        ${flight.fuelUsed ? `
+                                            <div style="margin: 0.5rem 0; font-size: 0.875rem;">
+                                                <strong>Combustible/Batería:</strong> ${flight.fuelUsed}
+                                            </div>
+                                        ` : ''}
+
+                                        ${flight.notes ? `
+                                            <div style="margin: 0.5rem 0; font-size: 0.875rem; color: var(--text-muted);">
+                                                <strong>Notas:</strong> ${flight.notes}
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `}
+                    </div>
+                `;
+            }
+
+            // ============================================
+            // MODALES
+            // ============================================
+
+            showAddModelModal() {
+                this.showModal(`
+                    <div class="modal-title">➕ Nuevo Aeromodelo</div>
+                    <form id="addModelForm" onsubmit="app.handleAddModel(event)">
+                        <div class="form-group">
+                            <label class="form-label">Nombre *</label>
+                            <input type="text" name="name" class="input-field" required placeholder="Ej: Cessna 182">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Descripción</label>
+                            <textarea name="description" class="input-field" placeholder="Ej: Avión de entrenamiento, motor eléctrico"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Observaciones</label>
+                            <textarea name="observations" class="input-field" placeholder="Notas adicionales, características especiales..."></textarea>
+                        </div>
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-success">Guardar</button>
+                            <button type="button" class="btn btn-secondary" onclick="app.closeModal()">Cancelar</button>
+                        </div>
+                    </form>
+                `);
+            }
+
+            showEditModelModal(modelId) {
+                const model = this.getModel(modelId);
+                if (!model) return;
+
+                this.showModal(`
+                    <div class="modal-title">✏️ Editar Aeromodelo</div>
+                    <form id="editModelForm" onsubmit="app.handleEditModel(event, '${modelId}')">
+                        <div class="form-group">
+                            <label class="form-label">Nombre *</label>
+                            <input type="text" name="name" class="input-field" required value="${model.name}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Descripción</label>
+                            <textarea name="description" class="input-field">${model.description}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Observaciones</label>
+                            <textarea name="observations" class="input-field">${model.observations}</textarea>
+                        </div>
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-success">Guardar Cambios</button>
+                            <button type="button" class="btn btn-secondary" onclick="app.closeModal()">Cancelar</button>
+                        </div>
+                    </form>
+                `);
+            }
+
+            showAddFlightModal(modelId) {
+                this.showModal(`
+                    <div class="modal-title">✈️ Registrar Nuevo Vuelo</div>
+                    <form id="addFlightForm" onsubmit="app.handleAddFlight(event, '${modelId}')">
+                        <div class="form-group">
+                            <label class="form-label">Duración (minutos) *</label>
+                            <input type="number" name="duration" class="input-field" required min="0" placeholder="Ej: 15">
+                        </div>
+                        
+                        <div class="form-group">
+                            <div class="maintenance-highlight">
+                                <div class="checkbox-container">
+                                    <input type="checkbox" id="maintenanceCheck" name="maintenanceChecked" class="checkbox">
+                                    <label for="maintenanceCheck" style="font-weight: 600; cursor: pointer;">
+                                        ✅ Mantenimiento Prevuelo Realizado
+                                    </label>
+                                </div>
+                                <textarea name="maintenanceNotes" class="input-field" style="margin-top: 0.5rem;" placeholder="Describe las tareas de mantenimiento realizadas..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Batería/Combustible Usado</label>
+                            <input type="text" name="fuelUsed" class="input-field" placeholder="Ej: Batería 3S 2200mAh, 50ml combustible">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Resultado del Vuelo *</label>
+                            <select name="result" class="input-field" required>
+                                <option value="success">✅ Éxito</option>
+                                <option value="incident">⚠️ Incidente</option>
+                                <option value="accident">❌ Accidente</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Notas</label>
+                            <textarea name="notes" class="input-field" placeholder="Observaciones del vuelo, condiciones meteorológicas, maniobras realizadas..."></textarea>
+                        </div>
+
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-success">Registrar Vuelo</button>
+                            <button type="button" class="btn btn-secondary" onclick="app.closeModal()">Cancelar</button>
+                        </div>
+                    </form>
+                `);
+            }
+
+            showModal(content) {
+                const modal = document.createElement('div');
+                modal.className = 'modal';
+                modal.id = 'appModal';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        ${content}
+                    </div>
+                `;
+                modal.onclick = (e) => {
+                    if (e.target === modal) {
+                        this.closeModal();
+                    }
+                };
+                document.body.appendChild(modal);
+            }
+
+            closeModal() {
+                const modal = document.getElementById('appModal');
+                if (modal) {
+                    modal.remove();
+                }
+            }
+
+            // ============================================
+            // MANEJADORES DE FORMULARIOS
+            // ============================================
+
+            handleAddModel(event) {
+                event.preventDefault();
+                const formData = new FormData(event.target);
+                const name = formData.get('name');
+                const description = formData.get('description');
+                const observations = formData.get('observations');
+
+                this.addModel(name, description, observations);
+                this.closeModal();
+                this.render();
+            }
+
+            handleEditModel(event, modelId) {
+                event.preventDefault();
+                const formData = new FormData(event.target);
+                const name = formData.get('name');
+                const description = formData.get('description');
+                const observations = formData.get('observations');
+
+                this.updateModel(modelId, name, description, observations);
+                this.closeModal();
+                this.render();
+            }
+
+            handleAddFlight(event, modelId) {
+                event.preventDefault();
+                const formData = new FormData(event.target);
+                
+                const duration = formData.get('duration');
+                const maintenanceChecked = formData.get('maintenanceChecked') === 'on';
+                const maintenanceNotes = formData.get('maintenanceNotes');
+                const fuelUsed = formData.get('fuelUsed');
+                const result = formData.get('result');
+                const notes = formData.get('notes');
+
+                this.addFlight(modelId, duration, maintenanceChecked, maintenanceNotes, fuelUsed, result, notes);
+                this.closeModal();
+                this.render();
+            }
+
+            // ============================================
+            // UTILIDADES
+            // ============================================
+
+            formatDateTime(isoString) {
+                const date = new Date(isoString);
+                const day = date.getDate().toString().padStart(2, '0');
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const year = date.getFullYear();
+                const hours = date.getHours().toString().padStart(2, '0');
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+                return `${day}/${month}/${year} ${hours}:${minutes}`;
+            }
+
+            renderResultBadge(result) {
+                const badges = {
+                    success: '<span class="badge badge-success">✅ Éxito</span>',
+                    incident: '<span class="badge badge-warning">⚠️ Incidente</span>',
+                    accident: '<span class="badge badge-danger">❌ Accidente</span>'
+                };
+                return badges[result] || badges.success;
+            }
+        }
+
+        // Inicializar la aplicación
+        const app = new FlightLogApp();
+
+        // Listener para cambios en el tema del sistema
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            if (!localStorage.getItem('theme')) {
+                app.theme = e.matches ? 'dark' : 'light';
+                app.applyTheme();
+                app.render();
+            }
+        });
+    </script>
+</body>
+</html>
