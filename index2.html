@@ -260,24 +260,24 @@
 
         .header-bar {
             background-color: var(--bg-card);
-            padding: 1rem 1.5rem;
+            padding: 1rem;
             box-shadow: var(--shadow);
             margin-bottom: 1.5rem;
             border-radius: 12px;
-            display: flex;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
+            gap: 0.75rem;
         }
 
         .header-title {
-            font-size: 1.5rem;
+            font-size: 1.25rem;
             font-weight: 700;
             color: var(--primary);
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            justify-self: center;
         }
 
         .header-title img {
@@ -382,7 +382,17 @@
             }
 
             .header-bar {
-                flex-direction: column;
+                grid-template-columns: auto 1fr auto;
+                padding: 0.75rem;
+            }
+
+            .header-title {
+                font-size: 1rem;
+            }
+
+            .header-title img {
+                width: 24px;
+                height: 24px;
             }
         }
 
@@ -649,14 +659,12 @@
 
                 return `
                     <div class="header-bar">
-                        <div style="display: flex; align-items: center; gap: 1rem;">
-                            <button class="back-button" onclick="window.location.href='index.html'">
-                                ← Volver
-                            </button>
-                            <div class="header-title">
-                                <img src="logo-cra.png" alt="CRA Logo">
-                                Libro de Registro de Vuelos
-                            </div>
+                        <button class="back-button" onclick="window.location.href='index.html'">
+                            ← Volver
+                        </button>
+                        <div class="header-title">
+                            <img src="logo-cra.png" alt="CRA Logo">
+                            <span>Libro de Registro de Vuelos</span>
                         </div>
                         <button class="theme-toggle" onclick="app.toggleTheme()">${themeIcon}</button>
                     </div>
