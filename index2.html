@@ -649,9 +649,14 @@
 
                 return `
                     <div class="header-bar">
-                        <div class="header-title">
-                            <img src="logo-cra.png" alt="CRA Logo">
-                            Libro de Registro de Vuelos
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <button class="back-button" onclick="window.location.href='index.html'">
+                                ← Volver
+                            </button>
+                            <div class="header-title">
+                                <img src="logo-cra.png" alt="CRA Logo">
+                                Libro de Registro de Vuelos
+                            </div>
                         </div>
                         <button class="theme-toggle" onclick="app.toggleTheme()">${themeIcon}</button>
                     </div>
