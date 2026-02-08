@@ -286,12 +286,18 @@
             border-radius: 8px;
             padding: 0.5rem;
             cursor: pointer;
-            font-size: 1.5rem;
             min-height: 48px;
             min-width: 48px;
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: hidden;
+        }
+
+        .theme-toggle img {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
         }
 
         .back-button {
@@ -639,7 +645,6 @@
 
             renderDashboard() {
                 const stats = this.getStats();
-                const themeIcon = this.theme === 'light' ? '🌙' : '☀️';
 
                 return `
                     <div class="header-bar">
@@ -647,7 +652,9 @@
                             <span style="transform: rotate(-45deg); display: inline-block;">✈️</span>
                             Libro de Registro de Vuelos
                         </div>
-                        <button class="theme-toggle" onclick="app.toggleTheme()">${themeIcon}</button>
+                        <button class="theme-toggle" onclick="app.toggleTheme()">
+                            <img src="logo-cra.png" alt="CRA Logo">
+                        </button>
                     </div>
 
                     <!-- Listado de Aeromodelos -->
@@ -755,14 +762,15 @@
 
                 const totalFlights = model.flights.length;
                 const totalMinutes = model.flights.reduce((sum, f) => sum + f.duration, 0);
-                const themeIcon = this.theme === 'light' ? '🌙' : '☀️';
 
                 return `
                     <div class="header-bar">
                         <button class="back-button" onclick="app.showDashboard()">
                             ← Volver
                         </button>
-                        <button class="theme-toggle" onclick="app.toggleTheme()">${themeIcon}</button>
+                        <button class="theme-toggle" onclick="app.toggleTheme()">
+                            <img src="logo-cra.png" alt="CRA Logo">
+                        </button>
                     </div>
 
                     <!-- Información del modelo -->
