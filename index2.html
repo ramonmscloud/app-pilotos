@@ -579,6 +579,24 @@
 
             // Exportar/Importar
             exportData() {
+                this.showModal(`
+                    <div class="modal-title">💾 Exportar Datos</div>
+                    <p style="margin-bottom: 1.5rem; color: var(--text-muted);">Selecciona el formato de exportación:</p>
+                    <div class="button-group">
+                        <button class="btn btn-primary" onclick="app.exportAsJSON(); app.closeModal();" style="width: 100%;">
+                            📄 Exportar como JSON
+                        </button>
+                        <button class="btn btn-success" onclick="app.exportAsCSV(); app.closeModal();" style="width: 100%;">
+                            📊 Exportar como CSV/Excel
+                        </button>
+                        <button class="btn btn-secondary" onclick="app.closeModal()" style="width: 100%;">
+                            Cancelar
+                        </button>
+                    </div>
+                `);
+            }
+
+            exportAsJSON() {
                 const data = {
                     version: '1.0',
                     exportDate: new Date().toISOString(),
@@ -589,12 +607,73 @@
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `libro-vuelos-backup-${new Date().toISOString().split('T')[0]}.json`;
+                a.download = `libro-vuelos-${new Date().toISOString().split('T')[0]}.json`;
                 a.click();
                 URL.revokeObjectURL(url);
             }
 
+            exportAsCSV() {
+                if (this.models.length === 0) {
+                    alert('No hay datos para exportar');
+                    return;
+                }
+
+                // Crear un CSV por cada aeromodelo
+                this.models.forEach(model => {
+                    let csv = 'Fecha/Hora,Duración (min),Mantenimiento,Notas Mantenimiento,Combustible/Batería,Resultado,Notas\n';
+                    
+                    model.flights.forEach(flight => {
+                        const row = [
+                            this.formatDateTime(flight.dateTime),
+                            flight.duration,
+                            flight.maintenanceChecked ? 'Sí' : 'No',
+                            `"${flight.maintenanceNotes.replace(/"/g, '""')}"`,
+                            `"${flight.fuelUsed.replace(/"/g, '""')}"`,
+                            this.getResultText(flight.result),
+                            `"${flight.notes.replace(/"/g, '""')}"`
+                        ];
+                        csv += row.join(',') + '\n';
+                    });
+
+                    // Agregar información del modelo al final
+                    csv += '\n';
+                    csv += `\nAeromodelo:,"${model.name.replace(/"/g, '""')}"\n`;
+                    csv += `Descripción:,"${model.description.replace(/"/g, '""')}"\n`;
+                    csv += `Observaciones:,"${model.observations.replace(/"/g, '""')}"\n`;
+                    csv += `Total vuelos:,${model.flights.length}\n`;
+                    csv += `Tiempo total:,${model.flights.reduce((s, f) => s + f.duration, 0)} minutos\n`;
+
+                    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${model.name.replace(/[^a-z0-9]/gi, '_')}-${new Date().toISOString().split('T')[0]}.csv`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                });
+
+                alert(`Se han exportado ${this.models.length} archivo(s) CSV`);
+            }
+
             importData() {
+                this.showModal(`
+                    <div class="modal-title">📁 Importar Datos</div>
+                    <p style="margin-bottom: 1.5rem; color: var(--text-muted);">Selecciona el formato a importar:</p>
+                    <div class="button-group">
+                        <button class="btn btn-primary" onclick="app.importFromJSON(); app.closeModal();" style="width: 100%;">
+                            📄 Importar desde JSON
+                        </button>
+                        <button class="btn btn-secondary" onclick="app.closeModal()" style="width: 100%;">
+                            Cancelar
+                        </button>
+                    </div>
+                    <p style="margin-top: 1rem; font-size: 0.875rem; color: var(--text-muted);">
+                        ⚠️ Nota: La importación desde CSV no está soportada. Usa el formato JSON.
+                    </p>
+                `);
+            }
+
+            importFromJSON() {
                 const input = document.createElement('input');
                 input.type = 'file';
                 input.accept = 'application/json';
@@ -624,6 +703,15 @@
                     }
                 };
                 input.click();
+            }
+
+            getResultText(result) {
+                const texts = {
+                    success: 'Éxito',
+                    incident: 'Incidente',
+                    accident: 'Accidente'
+                };
+                return texts[result] || 'Éxito';
             }
 
             // Navegación
