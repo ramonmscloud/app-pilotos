@@ -1111,9 +1111,12 @@
                 viewerBody.innerHTML = ''; // Clear previous
                 
                 if (mime.startsWith('image/')) {
-                    viewerBody.style.padding = '1rem';
+                    viewerBody.style.padding = '0';
                     viewerBody.style.display = 'block';
                     viewerBody.style.overflow = 'auto';
+                    viewerBody.style.webkitOverflowScrolling = 'touch';
+                    viewerBody.style.background = '#000';
+                    viewerBody.style.touchAction = 'pan-x pan-y pinch-zoom';
                     
                     const img = document.createElement('img');
                     img.src = content;
@@ -1124,6 +1127,7 @@
                     img.style.cursor = 'zoom-in';
                     img.style.transition = 'transform 0.3s ease';
                     img.style.transformOrigin = 'center center';
+                    img.style.touchAction = 'none'; // Permite que los eventos touch sean capturados
                     addZoomToImage(img);
                     viewerBody.appendChild(img);
                 } else if (mime === 'application/pdf') {
@@ -1583,13 +1587,14 @@
             
             img.addEventListener('touchstart', function(e) {
                 if (e.touches.length === 2) {
+                    e.preventDefault();
                     initialDistance = getDistance(e.touches);
                     initialScale = scale;
                 } else if (e.touches.length === 1 && scale > 1) {
                     panning = true;
                     start = { x: e.touches[0].clientX - pointX, y: e.touches[0].clientY - pointY };
                 }
-            });
+            }, { passive: false });
             
             img.addEventListener('touchmove', function(e) {
                 if (e.touches.length === 2) {
@@ -1605,11 +1610,11 @@
                     pointY = e.touches[0].clientY - start.y;
                     setTransform();
                 }
-            });
+            }, { passive: false });
             
             img.addEventListener('touchend', function() {
                 panning = false;
-            });
+            }, { passive: false });
             
             // Mouse pan when zoomed
             img.addEventListener('mousedown', function(e) {
