@@ -1435,6 +1435,10 @@
             const canvas = document.getElementById('pdfCanvas');
             const ctx = canvas.getContext('2d');
             
+            // Reiniciar completamente la matriz de transformación del canvas
+            // Esto previene el efecto espejo causado por transformaciones acumuladas
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            
             // Obtener el viewport con el zoom actual
             const viewport = page.getViewport({ scale: currentPdfScale });
             
