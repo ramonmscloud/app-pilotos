@@ -1266,16 +1266,31 @@ function updatePhysics(dt){
     // Suelo -> crash
     const groundY = getGroundHeight(plane.pos.x, plane.pos.z);
     if(plane.pos.y <= groundY + .5){
-        // En autoestabilizado es mucho más difícil crashear
-        const crashSpeed = autoStabilize ? 15 : 8;
-        const crashRoll = autoStabilize ? 1.0 : .5;
-        if(speed > crashSpeed || Math.abs(plane.rot.z) > crashRoll){
-            doCrash();
-        } else {
-            // Aterrizaje suave / rodadura
+        if(autoStabilize){
+            // Nunca se estrella: aterrizaje seguro y se detiene
             plane.pos.y = groundY + .5;
-            plane.vel.y = 0;
-            plane.vel.multiplyScalar(.95);
+            plane.vel.set(0,0,0);
+            plane.rot.x = 0;
+            plane.rot.z = 0;
+            // Si throttle=0, permanece parado
+            if(plane.throttle < 0.05){
+                // Nada, ya está parado
+            } else {
+                // Si hay motor, puede rodar suavemente
+                plane.vel.y = 0;
+            }
+        } else {
+            // En modo manual: crash si velocidad o alabeo excesivo
+            const crashSpeed = 8;
+            const crashRoll = .5;
+            if(speed > crashSpeed || Math.abs(plane.rot.z) > crashRoll){
+                doCrash();
+            } else {
+                // Aterrizaje suave / rodadura
+                plane.pos.y = groundY + .5;
+                plane.vel.y = 0;
+                plane.vel.multiplyScalar(.95);
+            }
         }
     }
 
