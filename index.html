@@ -905,7 +905,7 @@
                 <h3 style="margin: 0; font-size: 1rem;">Visor de Documentos</h3>
                 <button onclick="closeViewer()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
             </div>
-            <div id="viewerBody" style="flex: 1; overflow: auto; padding: 1rem; text-align: center; background: #000; touch-action: pan-x pan-y pinch-zoom; position: relative;">
+            <div id="viewerBody" style="flex: 1; overflow: auto; padding: 1rem; text-align: center; background: #000; touch-action: manipulation; position: relative;">
                 <!-- Content goes here -->
             </div>
             <div style="padding: 1rem; border-top: 1px solid var(--border); background: var(--bg-card); text-align: center;">
@@ -1189,7 +1189,7 @@
             scrollContainer.style.background = '#525659';
             scrollContainer.style.padding = '10px';
             scrollContainer.style.boxSizing = 'border-box';
-            scrollContainer.style.touchAction = 'pan-x pan-y'; // Permitir scroll pero capturar pinch (iOS y Android)
+            scrollContainer.style.touchAction = 'none'; // BLOQUEAR todos los gestos nativos para evitar efecto espejo en iOS
             
             // Canvas donde se renderiza el PDF
             const canvas = document.createElement('canvas');
@@ -1198,11 +1198,12 @@
             canvas.style.margin = '0 auto';
             canvas.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
             canvas.style.background = 'white';
+            canvas.style.transformOrigin = 'center center';
             
             scrollContainer.appendChild(canvas);
             viewerBody.appendChild(scrollContainer);
             
-            // Agregar soporte para pinch-to-zoom
+            // Agregar soporte para pinch-to-zoom y scroll manual
             scrollContainer.addEventListener('touchstart', handleTouchStart, { passive: false });
             scrollContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
             scrollContainer.addEventListener('touchend', handleTouchEnd, { passive: false });
@@ -1399,7 +1400,7 @@
             scrollContainer.style.background = '#525659';
             scrollContainer.style.padding = '10px';
             scrollContainer.style.boxSizing = 'border-box';
-            scrollContainer.style.touchAction = 'pan-x pan-y'; // Permitir scroll pero capturar pinch (iOS y Android)
+            scrollContainer.style.touchAction = 'none'; // BLOQUEAR todos los gestos nativos para evitar efecto espejo en iOS
             
             // Canvas donde se renderiza el PDF
             const canvas = document.createElement('canvas');
@@ -1408,11 +1409,12 @@
             canvas.style.margin = '0 auto';
             canvas.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
             canvas.style.background = 'white';
+            canvas.style.transformOrigin = 'center center';
             
             scrollContainer.appendChild(canvas);
             viewerBody.appendChild(scrollContainer);
             
-            // Agregar soporte para pinch-to-zoom (gestos táctiles)
+            // Agregar soporte para pinch-to-zoom y scroll manual
             scrollContainer.addEventListener('touchstart', handleTouchStart, { passive: false });
             scrollContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
             scrollContainer.addEventListener('touchend', handleTouchEnd, { passive: false });
@@ -1430,52 +1432,54 @@
             document.getElementById('viewerModal').classList.add('open');
         }
 
+        let isRendering = false; // Bloqueo para evitar renders simultáneos
+        
         async function renderPdfPage() {
-            if (!pdfDoc) return;
+            if (!pdfDoc || isRendering) return;
+            isRendering = true;
             
-            const page = await pdfDoc.getPage(currentPage);
-            let canvas = document.getElementById('pdfCanvas');
-            
-            // IMPORTANTE para iOS y Android: Forzar recreación completa del canvas
-            // Esto previene transformaciones acumuladas que causan el efecto espejo
-            // y asegura renderizado consistente en ambas plataformas
-            const container = canvas.parentNode;
-            const oldCanvas = canvas;
-            canvas = document.createElement('canvas');
-            canvas.id = 'pdfCanvas';
-            canvas.style.display = 'block';
-            canvas.style.margin = '0 auto';
-            canvas.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-            canvas.style.background = 'white';
-            canvas.style.willChange = 'transform'; // Optimización para Android
-            container.replaceChild(canvas, oldCanvas);
-            
-            // Obtener el viewport con el zoom actual
-            const viewport = page.getViewport({ scale: currentPdfScale });
-            
-            // Configurar el canvas con las dimensiones correctas
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-            
-            const ctx = canvas.getContext('2d', { alpha: false });
-            
-            // Asegurar transformación identidad
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
-            
-            // Rellenar con fondo blanco
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            const renderContext = {
-                canvasContext: ctx,
-                viewport: viewport
-            };
-            
-            await page.render(renderContext).promise;
-            
-            // Actualizar display
-            document.getElementById('pdfPageDisplay').textContent = `Pág ${currentPage}/${pdfDoc.numPages}`;
-            document.getElementById('pdfZoomDisplay').textContent = `${Math.round(currentPdfScale * 100)}%`;
+            try {
+                const page = await pdfDoc.getPage(currentPage);
+                const canvas = document.getElementById('pdfCanvas');
+                if (!canvas) { isRendering = false; return; }
+                
+                // Limpiar cualquier CSS transform residual (del pinch visual)
+                canvas.style.transform = 'none';
+                
+                // Obtener el viewport con el zoom actual
+                const viewport = page.getViewport({ scale: currentPdfScale });
+                
+                // Usar devicePixelRatio para nitidez, pero mantener tamaño CSS
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = Math.floor(viewport.width * dpr);
+                canvas.height = Math.floor(viewport.height * dpr);
+                canvas.style.width = Math.floor(viewport.width) + 'px';
+                canvas.style.height = Math.floor(viewport.height) + 'px';
+                
+                const ctx = canvas.getContext('2d');
+                
+                // CRÍTICO: resetear toda transformación del contexto
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                
+                // Fondo blanco
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, viewport.width, viewport.height);
+                
+                const renderContext = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+                
+                await page.render(renderContext).promise;
+                
+                // Actualizar display
+                document.getElementById('pdfPageDisplay').textContent = `Pág ${currentPage}/${pdfDoc.numPages}`;
+                document.getElementById('pdfZoomDisplay').textContent = `${Math.round(currentPdfScale * 100)}%`;
+            } catch (err) {
+                console.error('Error renderizando PDF:', err);
+            } finally {
+                isRendering = false;
+            }
         }
 
         function changePdfZoom(delta) {
@@ -1496,7 +1500,14 @@
             renderPdfPage();
         }
 
-        // Funciones para pinch-to-zoom con gestos táctiles
+        // ============================================================
+        // SISTEMA DE PINCH-TO-ZOOM PARA PDF (compatible iOS y Android)
+        // Estrategia: durante el gesto solo se aplica CSS transform
+        // Al soltar los dedos se re-renderiza el PDF al tamaño final
+        // ============================================================
+        let isPinching = false;
+        let lastSingleTouch = null; // Para scroll manual con un dedo
+        
         function getDistance(touches) {
             const dx = touches[0].clientX - touches[1].clientX;
             const dy = touches[0].clientY - touches[1].clientY;
@@ -1505,36 +1516,83 @@
 
         function handleTouchStart(e) {
             if (e.touches.length === 2) {
+                // Inicio de pinch-to-zoom
                 e.preventDefault();
-                e.stopPropagation(); // Prevenir interferencias del navegador
+                e.stopPropagation();
+                isPinching = true;
                 initialPinchDistance = getDistance(e.touches);
                 initialPinchScale = currentPdfScale;
+            } else if (e.touches.length === 1) {
+                // Guardar posición para scroll manual con un dedo
+                lastSingleTouch = {
+                    x: e.touches[0].clientX,
+                    y: e.touches[0].clientY
+                };
             }
         }
 
         function handleTouchMove(e) {
             if (e.touches.length === 2 && initialPinchDistance > 0) {
+                // PINCH: solo aplicar CSS transform visual (NO re-renderizar)
                 e.preventDefault();
-                e.stopPropagation(); // Prevenir interferencias del navegador
-                const currentDistance = getDistance(e.touches);
+                e.stopPropagation();
+                isPinching = true;
                 
-                // Validar que las distancias sean válidas para evitar escalas negativas
-                if (currentDistance > 0 && initialPinchDistance > 0) {
-                    const scaleChange = currentDistance / initialPinchDistance;
-                    const newScale = initialPinchScale * scaleChange;
-                    
-                    // Aplicar límites y validar que sea positivo
-                    if (newScale >= 0.5 && newScale <= 4.0 && !isNaN(newScale) && isFinite(newScale)) {
-                        currentPdfScale = Math.abs(newScale); // Asegurar que siempre sea positivo
-                        renderPdfPage();
+                const currentDistance = getDistance(e.touches);
+                if (currentDistance > 0) {
+                    const visualScale = currentDistance / initialPinchDistance;
+                    const canvas = document.getElementById('pdfCanvas');
+                    if (canvas) {
+                        // Solo transformación CSS visual - rápida y sin efecto espejo
+                        canvas.style.transform = 'scale(' + Math.max(0.3, Math.min(3.0, visualScale)) + ')';
                     }
+                }
+            } else if (e.touches.length === 1 && !isPinching && lastSingleTouch) {
+                // SCROLL manual con un dedo (porque touch-action: none lo bloquea)
+                e.preventDefault();
+                const container = document.getElementById('pdfScrollContainer');
+                if (container) {
+                    const dx = lastSingleTouch.x - e.touches[0].clientX;
+                    const dy = lastSingleTouch.y - e.touches[0].clientY;
+                    container.scrollLeft += dx;
+                    container.scrollTop += dy;
+                    lastSingleTouch = {
+                        x: e.touches[0].clientX,
+                        y: e.touches[0].clientY
+                    };
                 }
             }
         }
 
         function handleTouchEnd(e) {
-            if (e.touches.length < 2) {
+            if (isPinching && e.touches.length < 2) {
+                // Fin de pinch: calcular escala final y re-renderizar UNA sola vez
+                isPinching = false;
+                
+                const canvas = document.getElementById('pdfCanvas');
+                if (canvas) {
+                    // Extraer la escala CSS aplicada
+                    const transform = canvas.style.transform;
+                    const match = transform.match(/scale\(([\d.]+)\)/);
+                    if (match) {
+                        const visualScale = parseFloat(match[1]);
+                        const newScale = initialPinchScale * visualScale;
+                        
+                        // Aplicar límites
+                        if (newScale >= 0.5 && newScale <= 4.0 && isFinite(newScale)) {
+                            currentPdfScale = newScale;
+                        }
+                    }
+                    // Quitar transform CSS antes de re-renderizar
+                    canvas.style.transform = 'none';
+                }
+                
                 initialPinchDistance = 0;
+                renderPdfPage();
+            } else if (e.touches.length < 2) {
+                initialPinchDistance = 0;
+                isPinching = false;
+                lastSingleTouch = null;
             }
         }
 
