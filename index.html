@@ -320,6 +320,11 @@
             border-color: var(--accent);
         }
 
+        .btn-delete {
+            color: #e53e3e;
+            border-color: #e53e3e;
+        }
+
         /* --- Checklist Items --- */
         .checklist-item {
             display: flex;
@@ -1016,6 +1021,7 @@
                     
                     <div class="doc-actions">
                         <button class="btn-icon btn-edit" data-action="edit" data-doc="${doc.id}">✎</button>
+                        <button class="btn-icon btn-delete" data-action="delete" data-doc="${doc.id}">🗑</button>
                     </div>
                 </div>`;
                 container.insertAdjacentHTML('beforeend', html);
@@ -1050,6 +1056,8 @@
                         document.getElementById(inputId).click();
                     } else if (action === 'edit' && docId) {
                         document.getElementById(`input-${docId}`).click();
+                    } else if (action === 'delete' && docId) {
+                        removeDocFile(docId);
                     }
                     return;
                 }
