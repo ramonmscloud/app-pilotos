@@ -1153,6 +1153,15 @@
 
         function closeViewer() {
             document.getElementById('viewerModal').classList.remove('open');
+            
+            // Remover event listeners de touch
+            const scrollContainer = document.getElementById('pdfScrollContainer');
+            if (scrollContainer) {
+                scrollContainer.removeEventListener('touchstart', handleTouchStart);
+                scrollContainer.removeEventListener('touchmove', handleTouchMove);
+                scrollContainer.removeEventListener('touchend', handleTouchEnd);
+            }
+            
             // Reset styles that might have been changed by viewNormasPDF
             const viewerBody = document.getElementById('viewerBody');
             viewerBody.innerHTML = '';
@@ -1163,6 +1172,8 @@
             // Limpiar PDF variables
             pdfDoc = null;
             currentPage = 1;
+            initialPinchDistance = 0;
+            initialPinchScale = 1.0;
         }
 
         function openDocsModal() {
@@ -1272,6 +1283,8 @@
         let currentPdfScale = 1.5;
         let pdfDoc = null;
         let currentPage = 1;
+        let initialPinchDistance = 0;
+        let initialPinchScale = 1.0;
 
         async function viewNormasPDF() {
             const viewerBody = document.getElementById('viewerBody');
@@ -1328,6 +1341,11 @@
             
             scrollContainer.appendChild(canvas);
             viewerBody.appendChild(scrollContainer);
+            
+            // Agregar soporte para pinch-to-zoom (gestos táctiles)
+            scrollContainer.addEventListener('touchstart', handleTouchStart, { passive: false });
+            scrollContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
+            scrollContainer.addEventListener('touchend', handleTouchEnd, { passive: false });
             
             // Cargar PDF con PDF.js
             const loadingTask = pdfjsLib.getDocument('Normas_Seguridad_y_Operaciones_Limpias.pdf');
@@ -1387,6 +1405,42 @@
             if(currentPage > pdfDoc.numPages) currentPage = pdfDoc.numPages;
             
             renderPdfPage();
+        }
+
+        // Funciones para pinch-to-zoom con gestos táctiles
+        function getDistance(touches) {
+            const dx = touches[0].clientX - touches[1].clientX;
+            const dy = touches[0].clientY - touches[1].clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        function handleTouchStart(e) {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                initialPinchDistance = getDistance(e.touches);
+                initialPinchScale = currentPdfScale;
+            }
+        }
+
+        function handleTouchMove(e) {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                const currentDistance = getDistance(e.touches);
+                const scaleChange = currentDistance / initialPinchDistance;
+                const newScale = initialPinchScale * scaleChange;
+                
+                // Aplicar límites
+                if (newScale >= 0.5 && newScale <= 4.0) {
+                    currentPdfScale = newScale;
+                    renderPdfPage();
+                }
+            }
+        }
+
+        function handleTouchEnd(e) {
+            if (e.touches.length < 2) {
+                initialPinchDistance = 0;
+            }
         }
 
         function viewLocalImage() {
