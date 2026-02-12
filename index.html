@@ -608,6 +608,9 @@
         <!-- Pantalla 2: Pre-Vuelo -->
         <section id="screen-pre" class="screen">
             <div class="quick-links">
+                <button class="link-btn" onclick="viewNormasPDF()" style="cursor: pointer; border: none; text-decoration: none;">
+                    <span>📜</span> <span>Normas Seguridad y Operación</span>
+                </button>
                 <a href="#" target="_blank" class="link-btn" id="link1">
                     <span>☁️</span> <span id="label-link1">Meteo</span>
                     <button class="link-edit" onclick="openEditModal(1, event)">✎</button>
@@ -1249,6 +1252,25 @@
             });
         }
         
+        function viewNormasPDF() {
+            const viewerBody = document.getElementById('viewerBody');
+            viewerBody.innerHTML = '';
+            
+            // Check if mobile device to suggest opening in new tab if needed, 
+            // but iframe generally works or triggers download.
+            // Using <embed> or <object> is also an option, but iframe is standard.
+            
+            const iframe = document.createElement('iframe');
+            iframe.src = 'Normas_Seguridad_y_Operaciones_Limpias.pdf';
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
+            iframe.style.border = 'none';
+            
+            viewerBody.appendChild(iframe);
+            
+            document.getElementById('viewerModal').classList.add('open');
+        }
+
         function viewLocalImage() {
             const viewerBody = document.getElementById('viewerBody');
             viewerBody.innerHTML = '';
