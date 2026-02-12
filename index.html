@@ -1315,17 +1315,16 @@
             scrollContainer.style.overflow = 'auto'; 
             scrollContainer.style.webkitOverflowScrolling = 'touch';
             scrollContainer.style.background = '#525659';
-            scrollContainer.style.display = 'flex';
-            scrollContainer.style.justifyContent = 'center';
-            scrollContainer.style.alignItems = 'flex-start';
             scrollContainer.style.padding = '10px';
+            scrollContainer.style.boxSizing = 'border-box';
             
             // Canvas donde se renderiza el PDF
             const canvas = document.createElement('canvas');
             canvas.id = 'pdfCanvas';
-            canvas.style.maxWidth = '100%';
-            canvas.style.height = 'auto';
+            canvas.style.display = 'block';
+            canvas.style.margin = '0 auto';
             canvas.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+            canvas.style.background = 'white';
             
             scrollContainer.appendChild(canvas);
             viewerBody.appendChild(scrollContainer);
@@ -1350,9 +1349,15 @@
             const canvas = document.getElementById('pdfCanvas');
             const ctx = canvas.getContext('2d');
             
+            // Obtener el viewport con el zoom actual
             const viewport = page.getViewport({ scale: currentPdfScale });
+            
+            // Configurar el canvas con las dimensiones correctas
             canvas.height = viewport.height;
             canvas.width = viewport.width;
+            
+            // Limpiar el canvas antes de renderizar
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             const renderContext = {
                 canvasContext: ctx,
