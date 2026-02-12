@@ -1189,6 +1189,7 @@
             scrollContainer.style.background = '#525659';
             scrollContainer.style.padding = '10px';
             scrollContainer.style.boxSizing = 'border-box';
+            scrollContainer.style.touchAction = 'pan-x pan-y'; // Permitir scroll pero capturar pinch (iOS y Android)
             
             // Canvas donde se renderiza el PDF
             const canvas = document.createElement('canvas');
@@ -1398,6 +1399,7 @@
             scrollContainer.style.background = '#525659';
             scrollContainer.style.padding = '10px';
             scrollContainer.style.boxSizing = 'border-box';
+            scrollContainer.style.touchAction = 'pan-x pan-y'; // Permitir scroll pero capturar pinch (iOS y Android)
             
             // Canvas donde se renderiza el PDF
             const canvas = document.createElement('canvas');
@@ -1432,12 +1434,21 @@
             if (!pdfDoc) return;
             
             const page = await pdfDoc.getPage(currentPage);
-            const canvas = document.getElementById('pdfCanvas');
-            const ctx = canvas.getContext('2d');
+            let canvas = document.getElementById('pdfCanvas');
             
-            // Reiniciar completamente la matriz de transformación del canvas
-            // Esto previene el efecto espejo causado por transformaciones acumuladas
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            // IMPORTANTE para iOS y Android: Forzar recreación completa del canvas
+            // Esto previene transformaciones acumuladas que causan el efecto espejo
+            // y asegura renderizado consistente en ambas plataformas
+            const container = canvas.parentNode;
+            const oldCanvas = canvas;
+            canvas = document.createElement('canvas');
+            canvas.id = 'pdfCanvas';
+            canvas.style.display = 'block';
+            canvas.style.margin = '0 auto';
+            canvas.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+            canvas.style.background = 'white';
+            canvas.style.willChange = 'transform'; // Optimización para Android
+            container.replaceChild(canvas, oldCanvas);
             
             // Obtener el viewport con el zoom actual
             const viewport = page.getViewport({ scale: currentPdfScale });
@@ -1446,8 +1457,14 @@
             canvas.height = viewport.height;
             canvas.width = viewport.width;
             
-            // Limpiar el canvas antes de renderizar
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const ctx = canvas.getContext('2d', { alpha: false });
+            
+            // Asegurar transformación identidad
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            
+            // Rellenar con fondo blanco
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
             
             const renderContext = {
                 canvasContext: ctx,
@@ -1489,22 +1506,28 @@
         function handleTouchStart(e) {
             if (e.touches.length === 2) {
                 e.preventDefault();
+                e.stopPropagation(); // Prevenir interferencias del navegador
                 initialPinchDistance = getDistance(e.touches);
                 initialPinchScale = currentPdfScale;
             }
         }
 
         function handleTouchMove(e) {
-            if (e.touches.length === 2) {
+            if (e.touches.length === 2 && initialPinchDistance > 0) {
                 e.preventDefault();
+                e.stopPropagation(); // Prevenir interferencias del navegador
                 const currentDistance = getDistance(e.touches);
-                const scaleChange = currentDistance / initialPinchDistance;
-                const newScale = initialPinchScale * scaleChange;
                 
-                // Aplicar límites
-                if (newScale >= 0.5 && newScale <= 4.0) {
-                    currentPdfScale = newScale;
-                    renderPdfPage();
+                // Validar que las distancias sean válidas para evitar escalas negativas
+                if (currentDistance > 0 && initialPinchDistance > 0) {
+                    const scaleChange = currentDistance / initialPinchDistance;
+                    const newScale = initialPinchScale * scaleChange;
+                    
+                    // Aplicar límites y validar que sea positivo
+                    if (newScale >= 0.5 && newScale <= 4.0 && !isNaN(newScale) && isFinite(newScale)) {
+                        currentPdfScale = Math.abs(newScale); // Asegurar que siempre sea positivo
+                        renderPdfPage();
+                    }
                 }
             }
         }
