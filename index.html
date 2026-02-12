@@ -1252,23 +1252,67 @@
             });
         }
         
+        let currentPdfScale = 100;
+
         function viewNormasPDF() {
             const viewerBody = document.getElementById('viewerBody');
             viewerBody.innerHTML = '';
             
-            // Check if mobile device to suggest opening in new tab if needed, 
-            // but iframe generally works or triggers download.
-            // Using <embed> or <object> is also an option, but iframe is standard.
+            // Controle de Zoom para PDF
+            const controls = document.createElement('div');
+            controls.style.padding = '10px';
+            controls.style.background = '#333';
+            controls.style.color = '#fff';
+            controls.style.display = 'flex';
+            controls.style.justifyContent = 'center';
+            controls.style.gap = '1rem';
+            controls.style.position = 'sticky';
+            controls.style.top = '0';
+            controls.style.zIndex = '10';
+            
+            controls.innerHTML = `
+                <button onclick="changePdfZoom(25)" style="padding: 5px 15px; font-weight: bold; cursor: pointer;">Zoom +</button>
+                <span id="pdfZoomDisplay" style="align-self: center;">100%</span>
+                <button onclick="changePdfZoom(-25)" style="padding: 5px 15px; font-weight: bold; cursor: pointer;">Zoom -</button>
+            `;
+            
+            viewerBody.appendChild(controls);
             
             const iframe = document.createElement('iframe');
+            iframe.id = 'pdfIframe';
             iframe.src = 'Normas_Seguridad_y_Operaciones_Limpias.pdf';
             iframe.style.width = '100%';
-            iframe.style.height = '100%';
+            iframe.style.height = 'calc(100% - 50px)'; // Adjust for controls
             iframe.style.border = 'none';
+            iframe.style.transition = 'width 0.3s ease';
             
-            viewerBody.appendChild(iframe);
+            // Container for iframe to allow scrolling when wide
+            const container = document.createElement('div');
+            container.style.width = '100%';
+            container.style.height = '100%';
+            container.style.overflow = 'auto'; // Enable scrolling
+            container.style.webkitOverflowScrolling = 'touch';
+            
+            container.appendChild(iframe);
+            viewerBody.appendChild(container);
+            
+            currentPdfScale = 100; // Reset
             
             document.getElementById('viewerModal').classList.add('open');
+        }
+
+        function changePdfZoom(delta) {
+            currentPdfScale += delta;
+            if(currentPdfScale < 50) currentPdfScale = 50;
+            if(currentPdfScale > 300) currentPdfScale = 300;
+            
+            const iframe = document.getElementById('pdfIframe');
+            if(iframe) {
+                iframe.style.width = `${currentPdfScale}%`;
+                // Heights usually handles itself if 100% of container, but we might want min-height
+                // If we increase width, PDF viewer inside iframe usually fits to width, effectively zooming in.
+            }
+            document.getElementById('pdfZoomDisplay').textContent = `${currentPdfScale}%`;
         }
 
         function viewLocalImage() {
