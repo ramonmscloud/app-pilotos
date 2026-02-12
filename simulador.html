@@ -239,7 +239,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:-ap
 // ============================================================
 const ZONE_RADIUS = 300; // metros
 const ZONE_WARN = 260;   // inicio aviso
-const MAX_ALT = 120;     // techo metros (normativa UAS)
+const MAX_ALT = 240;     // techo metros
+const ALT_WARN = 200;    // aviso de altitud
 const GRAVITY = 9.81;
 const DEG = Math.PI / 180;
 
@@ -1231,9 +1232,22 @@ function checkRings(){
 // ============================================================
 function checkZone(){
     const dist2D = Math.sqrt(plane.pos.x**2 + plane.pos.z**2);
+    const alt = Math.max(0, plane.pos.y - getGroundHeight(plane.pos.x, plane.pos.z));
     const warn = document.getElementById('zoneWarning');
     
-    if(dist2D > ZONE_RADIUS){
+    // ALERTA DE ALTITUD (prioridad sobre zona lateral)
+    if(alt > MAX_ALT){
+        warn.style.display = 'block';
+        warn.textContent = `⚠️ ¡ALTITUD MÁXIMA ${MAX_ALT}m SUPERADA! ¡BAJA YA!`;
+        warn.style.background = 'rgba(220,38,38,.9)';
+        // Fuerza descendente
+        plane.vel.y -= (alt - MAX_ALT) * 0.3 * .016;
+        if(navigator.vibrate) navigator.vibrate(80);
+    } else if(alt > ALT_WARN){
+        warn.style.display = 'block';
+        warn.textContent = `⚠️ ALTITUD ${Math.round(alt)}m — Máx: ${MAX_ALT}m ¡BAJA!`;
+        warn.style.background = 'rgba(245,158,11,.9)';
+    } else if(dist2D > ZONE_RADIUS){
         // Fuera de zona — empujar de vuelta
         warn.style.display = 'block';
         warn.textContent = '⚠️ ¡FUERA DE ZONA! Regresa inmediatamente';
@@ -1312,7 +1326,14 @@ function updateHUD(){
     const dirs = ['N','NE','E','SE','S','SO','O','NO'];
     const dirIdx = Math.round(hdg/45) % 8;
 
-    document.getElementById('hudAlt').textContent = `${Math.round(alt)} m`;
+    const altEl = document.getElementById('hudAlt');
+    const altRound = Math.round(alt);
+    altEl.textContent = `${altRound} m`;
+    // Color de altitud según peligro
+    if(alt > MAX_ALT) altEl.style.color = '#fc8181';
+    else if(alt > ALT_WARN) altEl.style.color = '#f6e05e';
+    else altEl.style.color = '#fff';
+
     document.getElementById('hudSpd').textContent = `${Math.round(speed)} km/h`;
     document.getElementById('hudDist').textContent = `${Math.round(dist)} m`;
     document.getElementById('hudHdg').textContent = `${dirs[dirIdx]} ${Math.round(hdg)}°`;
