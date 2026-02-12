@@ -812,7 +812,7 @@
             </div>
 
             <div class="reset-container">
-                <button class="btn-reset" onclick="window.location.href='index2.html'">Registro de Vuelo</button>
+                <button class="btn-reset" onclick="registroDeVuelo()">Registro de Vuelo</button>
             </div>
         </section>
 
@@ -1766,6 +1766,23 @@
                 const dy = touches[0].clientY - touches[1].clientY;
                 return Math.sqrt(dx * dx + dy * dy);
             }
+        }
+
+        // --- Registro de Vuelo: resetear checklists y navegar ---
+        function registroDeVuelo() {
+            // Resetear todos los checkboxes de Pre-Vuelo, Vuelo y Post
+            const prefixes = ['pre_', 'fly_', 'post_'];
+            document.querySelectorAll('input[type="checkbox"][data-id]').forEach(cb => {
+                const id = cb.dataset.id;
+                if (prefixes.some(p => id.startsWith(p))) {
+                    cb.checked = false;
+                    localStorage.removeItem(id);
+                }
+            });
+            // Actualizar barras de progreso
+            ['pre', 'flight', 'post'].forEach(phase => updateProgress(phase));
+            // Navegar a index2.html
+            window.location.href = 'index2.html';
         }
 
         // --- Progress Logic ---
