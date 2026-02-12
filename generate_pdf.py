@@ -47,7 +47,7 @@ content_data = [
         "title": "Gestión Administrativa y Requisitos del Personal",
         "items": [
             ("Acreditación y Registro", 
-             "Ninguna operación puede iniciarse sin que el piloto cuente con su registro de operador de UAS (el cual debe estar reseñado en el aeromodelo), su certificado de competencia y un seguro de responsabilidad civil (mínimo 750.000 DEG)."),
+             "Ninguna operación puede iniciarse sin que el piloto cuente con su registro de operador de UAS (el cual debe estar reseñado en el aeromodelo), su licencia de la Federación de Deportes Aéreos correspondiente y un seguro de responsabilidad civil (mínimo 750.000 DEG)."),
             ("Estado del Piloto", 
              "Está estrictamente prohibido operar bajo los efectos del alcohol o sustancias psicoactivas, o en condiciones de fatiga, enfermedad o medicación que mermen las capacidades."),
             ("Supervisión Operativa", 

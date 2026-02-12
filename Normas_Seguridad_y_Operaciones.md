@@ -2,7 +2,7 @@
 
 ## 1. Gestión Administrativa y Requisitos del Personal
 
-- **Acreditación y Registro**: Ninguna operación puede iniciarse sin que el piloto cuente con su registro de operador de UAS (el cual debe estar reseñado en el aeromodelo), su certificado de competencia y un seguro de responsabilidad civil (mínimo 750.000 DEG).
+- **Acreditación y Registro**: Ninguna operación puede iniciarse sin que el piloto cuente con su registro de operador de UAS (el cual debe estar reseñado en el aeromodelo), su licencia de la Federación de Deportes Aéreos correspondiente y un seguro de responsabilidad civil (mínimo 750.000 DEG).
 - **Estado del Piloto**: Está estrictamente prohibido operar bajo los efectos del alcohol o sustancias psicoactivas, o en condiciones de fatiga, enfermedad o medicación que mermen las capacidades.
 - **Supervisión Operativa**: El control de la actividad en el campo recae en el Responsable de Operaciones de Vuelo (o en su defecto, el primer piloto validado socio que llegue al club), quien debe supervisar que todos apliquen el Manual de Operaciones y posean sus certificados vigentes.
 
