@@ -1145,7 +1145,12 @@
 
         function closeViewer() {
             document.getElementById('viewerModal').classList.remove('open');
-            document.getElementById('viewerBody').innerHTML = ''; // Clear memory
+            // Reset styles that might have been changed by viewNormasPDF
+            const viewerBody = document.getElementById('viewerBody');
+            viewerBody.innerHTML = '';
+            viewerBody.style.padding = '1rem';
+            viewerBody.style.display = 'block';
+            viewerBody.style.overflow = 'auto';
         }
 
         function openDocsModal() {
@@ -1258,6 +1263,12 @@
             const viewerBody = document.getElementById('viewerBody');
             viewerBody.innerHTML = '';
             
+            // Remove padding/centering for PDF view to maximize space
+            viewerBody.style.padding = '0';
+            viewerBody.style.display = 'flex';
+            viewerBody.style.flexDirection = 'column';
+            viewerBody.style.overflow = 'hidden'; // Outer body no longer scrolls, internal container does
+            
             // Controle de Zoom para PDF
             const controls = document.createElement('div');
             controls.style.padding = '10px';
@@ -1266,37 +1277,49 @@
             controls.style.display = 'flex';
             controls.style.justifyContent = 'center';
             controls.style.gap = '1rem';
-            controls.style.position = 'sticky';
-            controls.style.top = '0';
             controls.style.zIndex = '10';
+            controls.style.flexShrink = '0'; // Prevent shrinking
             
             controls.innerHTML = `
-                <button onclick="changePdfZoom(25)" style="padding: 5px 15px; font-weight: bold; cursor: pointer;">Zoom +</button>
-                <span id="pdfZoomDisplay" style="align-self: center;">100%</span>
-                <button onclick="changePdfZoom(-25)" style="padding: 5px 15px; font-weight: bold; cursor: pointer;">Zoom -</button>
+                <button onclick="changePdfZoom(25)" style="padding: 5px 15px; font-weight: bold; cursor: pointer; border-radius:4px; border:none;">Zoom +</button>
+                <span id="pdfZoomDisplay" style="align-self: center; font-family:monospace; font-size:1.1rem;">100%</span>
+                <button onclick="changePdfZoom(-25)" style="padding: 5px 15px; font-weight: bold; cursor: pointer; border-radius:4px; border:none;">Zoom -</button>
             `;
             
             viewerBody.appendChild(controls);
+            
+            // Scroll Container (Viewport)
+            const scrollContainer = document.createElement('div');
+            scrollContainer.style.flex = '1';
+            scrollContainer.style.width = '100%';
+            scrollContainer.style.overflow = 'auto'; 
+            scrollContainer.style.webkitOverflowScrolling = 'touch'; // Crucial for iOS
+            scrollContainer.style.position = 'relative';
+            scrollContainer.style.background = '#525659'; // PDF background color
+            
+            // Content Wrapper (Scalable)
+            const contentWrapper = document.createElement('div');
+            contentWrapper.id = 'pdfContentWrapper';
+            contentWrapper.style.width = '100%';
+            contentWrapper.style.height = '100%';
+            contentWrapper.style.transformOrigin = '0 0';
+            contentWrapper.style.transition = 'width 0.2s ease, height 0.2s ease';
             
             const iframe = document.createElement('iframe');
             iframe.id = 'pdfIframe';
             iframe.src = 'Normas_Seguridad_y_Operaciones_Limpias.pdf';
             iframe.style.width = '100%';
-            iframe.style.height = 'calc(100% - 50px)'; // Adjust for controls
+            iframe.style.height = '100%';
             iframe.style.border = 'none';
-            iframe.style.transition = 'width 0.3s ease';
+            // iOS fix: allow iframe to be styled
+            iframe.setAttribute('frameborder', '0');
+            iframe.setAttribute('scrolling', 'no'); 
+
+            contentWrapper.appendChild(iframe);
+            scrollContainer.appendChild(contentWrapper);
+            viewerBody.appendChild(scrollContainer);
             
-            // Container for iframe to allow scrolling when wide
-            const container = document.createElement('div');
-            container.style.width = '100%';
-            container.style.height = '100%';
-            container.style.overflow = 'auto'; // Enable scrolling
-            container.style.webkitOverflowScrolling = 'touch';
-            
-            container.appendChild(iframe);
-            viewerBody.appendChild(container);
-            
-            currentPdfScale = 100; // Reset
+            currentPdfScale = 100; 
             
             document.getElementById('viewerModal').classList.add('open');
         }
@@ -1306,11 +1329,15 @@
             if(currentPdfScale < 50) currentPdfScale = 50;
             if(currentPdfScale > 300) currentPdfScale = 300;
             
-            const iframe = document.getElementById('pdfIframe');
-            if(iframe) {
-                iframe.style.width = `${currentPdfScale}%`;
-                // Heights usually handles itself if 100% of container, but we might want min-height
-                // If we increase width, PDF viewer inside iframe usually fits to width, effectively zooming in.
+            const wrapper = document.getElementById('pdfContentWrapper');
+            if(wrapper) {
+                // Expanding the wrapper dimensions forces the scrollContainer to scroll
+                wrapper.style.width = `${currentPdfScale}%`;
+                // Scaling height is necessary to keep aspect ratio and allow scrolling down
+                // IF the iframe renders content responsive to width.
+                // For PDF, 100% height usually means "height of the viewport".
+                // We want "height of the zoomed viewport".
+                wrapper.style.height = `${currentPdfScale}%`;
             }
             document.getElementById('pdfZoomDisplay').textContent = `${currentPdfScale}%`;
         }
