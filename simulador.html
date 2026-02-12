@@ -1088,7 +1088,9 @@ function updatePhysics(dt){
     plane.rot.y += coordTurnRate * dt;
 
     // Amortiguación de roll/pitch
-    if(autoStabilize){
+    // El modo autoestabilizado solo actúa si NO hay input manual
+    const noManualInput = Math.abs(plane.inputRoll) < 0.05 && Math.abs(plane.inputPitch) < 0.05 && Math.abs(plane.inputYaw) < 0.05 && (!joysticks.left.active && !joysticks.right.active);
+    if(autoStabilize && noManualInput){
         // MODO AUTOESTABILIZADO
         const stabStr = 4.0;
         const maxRollStab = 35 * DEG;
@@ -1437,6 +1439,10 @@ function updateCamera(dt){
 //  HUD
 // ============================================================
 function updateHUD(){
+        // Indicador de autoestabilizado SOLO si activo y sin input manual
+        const ind = document.getElementById('stabIndicator');
+        const noManualInput = Math.abs(plane.inputRoll) < 0.05 && Math.abs(plane.inputPitch) < 0.05 && Math.abs(plane.inputYaw) < 0.05 && (!joysticks.left.active && !joysticks.right.active);
+        ind.style.display = (autoStabilize && noManualInput) ? 'block' : 'none';
     const speed = plane.speed * 3.6; // km/h
     const alt = Math.max(0, plane.pos.y - getGroundHeight(plane.pos.x, plane.pos.z));
     const dist = Math.sqrt(plane.pos.x**2 + plane.pos.z**2);
