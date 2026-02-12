@@ -1111,6 +1111,10 @@
                 viewerBody.innerHTML = ''; // Clear previous
                 
                 if (mime.startsWith('image/')) {
+                    viewerBody.style.padding = '1rem';
+                    viewerBody.style.display = 'block';
+                    viewerBody.style.overflow = 'auto';
+                    
                     const img = document.createElement('img');
                     img.src = content;
                     img.style.maxWidth = '100%';
@@ -1123,25 +1127,11 @@
                     addZoomToImage(img);
                     viewerBody.appendChild(img);
                 } else if (mime === 'application/pdf') {
-                    // PDF handling for mobile is tricky, usually embed or object works best for inline if supported
-                    const obj = document.createElement('object');
-                    obj.data = content;
-                    obj.type = "application/pdf";
-                    obj.style.width = '100%';
-                    obj.style.height = '100%';
-                    
-                    // Fallback for iOS which struggles with embedded base64 PDFs
-                    const link = document.createElement('a');
-                    link.href = content;
-                    link.download = "documento.pdf";
-                    link.textContent = "Si no ves el PDF, pulsa aquí para descargar/abrir";
-                    link.style.color = "white";
-                    link.style.display = "block";
-                    link.style.marginTop = "1rem";
-                    
-                    obj.appendChild(link);
-                    viewerBody.appendChild(obj);
+                    // Usar el mismo sistema de PDF.js con zoom
+                    viewPdfFromBase64(content);
+                    return; // viewPdfFromBase64 abre el modal
                 } else {
+                     viewerBody.style.padding = '1rem';
                      viewerBody.innerHTML = '<p style="color:white">Formato no soportado para vista previa.</p>';
                 }
                 
@@ -1149,6 +1139,80 @@
             } else {
                 alert('No se puede visualizar el contenido (no se guardó o se borró). Cárgalo de nuevo.');
             }
+        }
+
+        async function viewPdfFromBase64(base64Data) {
+            const viewerBody = document.getElementById('viewerBody');
+            viewerBody.innerHTML = '';
+            
+            viewerBody.style.padding = '0';
+            viewerBody.style.display = 'flex';
+            viewerBody.style.flexDirection = 'column';
+            viewerBody.style.overflow = 'hidden';
+            
+            // Controles
+            const controls = document.createElement('div');
+            controls.style.padding = '10px';
+            controls.style.background = '#333';
+            controls.style.color = '#fff';
+            controls.style.display = 'flex';
+            controls.style.justifyContent = 'center';
+            controls.style.alignItems = 'center';
+            controls.style.gap = '0.5rem';
+            controls.style.zIndex = '10';
+            controls.style.flexShrink = '0';
+            controls.style.flexWrap = 'wrap';
+            
+            controls.innerHTML = `
+                <button onclick="changePdfPage(-1)" style="padding: 5px 10px; font-weight: bold; cursor: pointer; border-radius:4px; border:none;">◀</button>
+                <span id="pdfPageDisplay" style="font-family:monospace; font-size:0.9rem;">Pág 1</span>
+                <button onclick="changePdfPage(1)" style="padding: 5px 10px; font-weight: bold; cursor: pointer; border-radius:4px; border:none;">▶</button>
+                <span style="margin: 0 0.5rem;">|</span>
+                <button onclick="changePdfZoom(-0.2)" style="padding: 5px 15px; font-weight: bold; cursor: pointer; border-radius:4px; border:none;">-</button>
+                <span id="pdfZoomDisplay" style="font-family:monospace; font-size:0.9rem;">150%</span>
+                <button onclick="changePdfZoom(0.2)" style="padding: 5px 15px; font-weight: bold; cursor: pointer; border-radius:4px; border:none;">+</button>
+            `;
+            
+            viewerBody.appendChild(controls);
+            
+            // Contenedor con scroll
+            const scrollContainer = document.createElement('div');
+            scrollContainer.id = 'pdfScrollContainer';
+            scrollContainer.style.flex = '1';
+            scrollContainer.style.width = '100%';
+            scrollContainer.style.overflow = 'auto'; 
+            scrollContainer.style.webkitOverflowScrolling = 'touch';
+            scrollContainer.style.background = '#525659';
+            scrollContainer.style.padding = '10px';
+            scrollContainer.style.boxSizing = 'border-box';
+            
+            // Canvas donde se renderiza el PDF
+            const canvas = document.createElement('canvas');
+            canvas.id = 'pdfCanvas';
+            canvas.style.display = 'block';
+            canvas.style.margin = '0 auto';
+            canvas.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+            canvas.style.background = 'white';
+            
+            scrollContainer.appendChild(canvas);
+            viewerBody.appendChild(scrollContainer);
+            
+            // Agregar soporte para pinch-to-zoom
+            scrollContainer.addEventListener('touchstart', handleTouchStart, { passive: false });
+            scrollContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
+            scrollContainer.addEventListener('touchend', handleTouchEnd, { passive: false });
+            
+            // Cargar PDF desde base64
+            const loadingTask = pdfjsLib.getDocument({ data: atob(base64Data.split(',')[1]) });
+            try {
+                pdfDoc = await loadingTask.promise;
+                currentPage = 1;
+                renderPdfPage();
+            } catch (error) {
+                scrollContainer.innerHTML = '<p style="color:white; padding:20px;">Error al cargar el PDF</p>';
+            }
+            
+            document.getElementById('viewerModal').classList.add('open');
         }
 
         function closeViewer() {
