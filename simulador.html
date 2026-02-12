@@ -244,6 +244,32 @@ const ALT_WARN = 200;    // aviso de altitud
 const GRAVITY = 9.81;
 const DEG = Math.PI / 180;
 
+// Sector circular: 145° centrado en norte (-Z)
+// Norte en Three.js = -Z → ángulo de referencia = Math.PI/2 en atan2(x,-z)
+const SECTOR_ANGLE = 145 * DEG;        // apertura total
+const SECTOR_HALF = SECTOR_ANGLE / 2;  // 72.5°
+// Dirección norte = ángulo 0 en nuestro sistema
+// Un punto (x,z) tiene ángulo desde norte = atan2(x, -z)
+
+// Comprobar si un punto 2D está dentro del sector
+function isInSector(x, z){
+    const dist = Math.sqrt(x*x + z*z);
+    if(dist > ZONE_RADIUS) return false;
+    if(dist < 1) return true; // centro siempre dentro
+    const angle = Math.atan2(x, -z); // 0 = norte, +/- = este/oeste
+    return Math.abs(angle) <= SECTOR_HALF;
+}
+function distToSectorEdge(x, z){
+    const dist = Math.sqrt(x*x + z*z);
+    const angle = Math.atan2(x, -z);
+    const absAngle = Math.abs(angle);
+    // Distancia al arco
+    const dArc = ZONE_RADIUS - dist;
+    // Distancia al lateral del sector (perpendicular al borde radial)
+    const dSide = dist * Math.sin(SECTOR_HALF - absAngle);
+    return Math.min(dArc, absAngle <= SECTOR_HALF ? dSide : -dSide);
+}
+
 // Tipos de avión
 const PLANES = {
     trainer: { name:'Entrenador', speed:25, maxSpeed:45, turnRate:.8, liftMul:1.3, dragMul:1.0, stallSpeed:8, color:0x3182ce, accent:0xffffff },
@@ -397,29 +423,99 @@ for(let i = -35; i <= 35; i += 10){
 }
 
 // ============================================================
-//  PERÍMETRO ZONA 300m — Círculo visible
+//  PERÍMETRO ZONA — Sector circular 145° hacia Norte + Vía de tren
 // ============================================================
-const zonePoints = [];
-for(let a = 0; a <= Math.PI*2; a += Math.PI/60){
-    zonePoints.push(new THREE.Vector3(Math.cos(a)*ZONE_RADIUS, 1, Math.sin(a)*ZONE_RADIUS));
+// Dibujar arco del sector
+const sectorPoints = [];
+// Borde radial izquierdo (desde centro al arco) 
+const leftAngle = Math.PI/2 + SECTOR_HALF; // en sistema Three.js (x,z)
+const rightAngle = Math.PI/2 - SECTOR_HALF;
+sectorPoints.push(new THREE.Vector3(0, 1, 0)); // centro
+for(let a = rightAngle; a <= leftAngle; a += Math.PI/60){
+    sectorPoints.push(new THREE.Vector3(Math.cos(a)*ZONE_RADIUS, 1, -Math.sin(a)*ZONE_RADIUS));
 }
-const zoneLineGeo = new THREE.BufferGeometry().setFromPoints(zonePoints);
-const zoneLine = new THREE.Line(zoneLineGeo, new THREE.LineBasicMaterial({color:0xff4444, linewidth:2, transparent:true, opacity:.6}));
-scene.add(zoneLine);
+sectorPoints.push(new THREE.Vector3(0, 1, 0)); // cerrar al centro
+const sectorGeo = new THREE.BufferGeometry().setFromPoints(sectorPoints);
+const sectorLine = new THREE.Line(sectorGeo, new THREE.LineBasicMaterial({color:0xff4444, linewidth:2, transparent:true, opacity:.7}));
+scene.add(sectorLine);
 
-// Postes cada 30° para visualizar
-for(let a = 0; a < Math.PI*2; a += Math.PI/6){
+// Postes en el arco cada ~15°
+for(let a = rightAngle; a <= leftAngle; a += 15*DEG){
+    const px = Math.cos(a)*ZONE_RADIUS;
+    const pz = -Math.sin(a)*ZONE_RADIUS;
     const poleGeo = new THREE.CylinderGeometry(.3,.3,15);
     const poleMat = new THREE.MeshStandardMaterial({color:0xff4444, emissive:0x661111});
     const pole = new THREE.Mesh(poleGeo, poleMat);
-    pole.position.set(Math.cos(a)*ZONE_RADIUS, 7.5, Math.sin(a)*ZONE_RADIUS);
+    pole.position.set(px, 7.5, pz);
     scene.add(pole);
-    // Banderín
     const flagGeo = new THREE.PlaneGeometry(4,2);
     const flagMat = new THREE.MeshBasicMaterial({color:0xff0000, side:THREE.DoubleSide, transparent:true, opacity:.7});
     const flag = new THREE.Mesh(flagGeo, flagMat);
-    flag.position.set(Math.cos(a)*ZONE_RADIUS + 2, 13, Math.sin(a)*ZONE_RADIUS);
+    flag.position.set(px + 2, 13, pz);
     scene.add(flag);
+}
+// Postes en los bordes radiales (líneas laterales del sector)
+for(let d = 50; d <= ZONE_RADIUS; d += 50){
+    for(const ang of [rightAngle, leftAngle]){
+        const px = Math.cos(ang)*d;
+        const pz = -Math.sin(ang)*d;
+        const smallPole = new THREE.Mesh(
+            new THREE.CylinderGeometry(.15,.15,8),
+            new THREE.MeshStandardMaterial({color:0xff6644, emissive:0x441100})
+        );
+        smallPole.position.set(px, 4, pz);
+        scene.add(smallPole);
+    }
+}
+
+// ============================================================
+//  VÍA DE TREN (al sur, z > 0)
+// ============================================================
+const trainTrackZ = 30; // distancia al sur del piloto
+// Raíles
+for(let offset of [-1.0, 1.0]){
+    const railGeo = new THREE.BoxGeometry(600, .15, .12);
+    const railMat = new THREE.MeshStandardMaterial({color:0x888888, metalness:.7, roughness:.3});
+    const rail = new THREE.Mesh(railGeo, railMat);
+    rail.position.set(0, .1, trainTrackZ + offset);
+    scene.add(rail);
+}
+// Traviesas
+for(let x = -300; x <= 300; x += 3){
+    const tie = new THREE.Mesh(
+        new THREE.BoxGeometry(.4, .1, 2.8),
+        new THREE.MeshStandardMaterial({color:0x5C4033, roughness:.9})
+    );
+    tie.position.set(x, .05, trainTrackZ);
+    scene.add(tie);
+}
+// Balasto (grava bajo las vías)
+const ballastGeo = new THREE.BoxGeometry(620, .08, 4.5);
+const ballastMat = new THREE.MeshStandardMaterial({color:0x9e9e9e, roughness:1});
+const ballast = new THREE.Mesh(ballastGeo, ballastMat);
+ballast.position.set(0, .02, trainTrackZ);
+scene.add(ballast);
+// Señal de prohibido sobrevolar
+for(let x of [-100, 0, 100]){
+    const signPole = new THREE.Mesh(
+        new THREE.CylinderGeometry(.08,.08,5),
+        new THREE.MeshStandardMaterial({color:0x666666})
+    );
+    signPole.position.set(x, 2.5, trainTrackZ - 3);
+    scene.add(signPole);
+    const signBoard = new THREE.Mesh(
+        new THREE.BoxGeometry(3, 1.5, .1),
+        new THREE.MeshStandardMaterial({color:0xcc0000, emissive:0x440000})
+    );
+    signBoard.position.set(x, 5, trainTrackZ - 3);
+    scene.add(signBoard);
+    // Franja blanca
+    const stripe = new THREE.Mesh(
+        new THREE.BoxGeometry(2.5, .3, .12),
+        new THREE.MeshBasicMaterial({color:0xffffff})
+    );
+    stripe.position.set(x, 5, trainTrackZ - 3.05);
+    scene.add(stripe);
 }
 
 // ============================================================
@@ -737,10 +833,16 @@ function spawnRings(){
     ringsPassed = [];
     const diff = DIFFICULTY[selectedDiff];
     for(let i = 0; i < diff.rings; i++){
-        const angle = Math.random()*Math.PI*2;
-        const dist = 40 + Math.random()*(ZONE_RADIUS - 60);
-        const x = Math.cos(angle)*dist;
-        const z = Math.sin(angle)*dist;
+        // Generar posición dentro del sector de 145°
+        let x, z;
+        let attempts = 0;
+        do {
+            const sectorAngle = (Math.random() - 0.5) * SECTOR_ANGLE; // ±72.5° desde norte
+            const dist = 40 + Math.random()*(ZONE_RADIUS - 60);
+            x = Math.sin(sectorAngle)*dist;
+            z = -Math.cos(sectorAngle)*dist; // norte = -Z
+            attempts++;
+        } while(!isInSector(x, z) && attempts < 50);
         const y = 15 + Math.random()*50;
         
         const torusGeo = new THREE.TorusGeometry(diff.ringSize/2, .4, 8, 24);
@@ -1234,33 +1336,49 @@ function checkZone(){
     const dist2D = Math.sqrt(plane.pos.x**2 + plane.pos.z**2);
     const alt = Math.max(0, plane.pos.y - getGroundHeight(plane.pos.x, plane.pos.z));
     const warn = document.getElementById('zoneWarning');
+    const inSector = isInSector(plane.pos.x, plane.pos.z);
+    const edgeDist = distToSectorEdge(plane.pos.x, plane.pos.z);
     
-    // ALERTA DE ALTITUD (prioridad sobre zona lateral)
+    // ALERTA DE ALTITUD (prioridad máxima)
     if(alt > MAX_ALT){
         warn.style.display = 'block';
         warn.textContent = `⚠️ ¡ALTITUD MÁXIMA ${MAX_ALT}m SUPERADA! ¡BAJA YA!`;
         warn.style.background = 'rgba(220,38,38,.9)';
-        // Fuerza descendente
         plane.vel.y -= (alt - MAX_ALT) * 0.3 * .016;
         if(navigator.vibrate) navigator.vibrate(80);
     } else if(alt > ALT_WARN){
         warn.style.display = 'block';
         warn.textContent = `⚠️ ALTITUD ${Math.round(alt)}m — Máx: ${MAX_ALT}m ¡BAJA!`;
         warn.style.background = 'rgba(245,158,11,.9)';
-    } else if(dist2D > ZONE_RADIUS){
-        // Fuera de zona — empujar de vuelta
+    
+    // ALERTA VÍA DE TREN (sobrevolar al sur)
+    } else if(plane.pos.z > 20){
         warn.style.display = 'block';
-        warn.textContent = '⚠️ ¡FUERA DE ZONA! Regresa inmediatamente';
+        warn.textContent = '🚂 ¡PROHIBIDO SOBREVOLAR VÍA DE TREN! ¡Regresa al norte!';
+        warn.style.background = 'rgba(180,30,30,.95)';
+        // Empujar hacia el norte
+        const pushForce = (plane.pos.z - 20) * .8;
+        plane.vel.z -= pushForce * .016;
+        if(navigator.vibrate) navigator.vibrate(100);
+    
+    // FUERA DEL SECTOR
+    } else if(!inSector){
+        warn.style.display = 'block';
+        warn.textContent = '⚠️ ¡FUERA DE ZONA DE VUELO! Regresa al sector';
         warn.style.background = 'rgba(220,38,38,.9)';
-        // Fuerza de retorno
+        // Empujar hacia dentro del sector
         const angle = Math.atan2(plane.pos.z, plane.pos.x);
-        const pushForce = (dist2D - ZONE_RADIUS) * .5;
+        const pushForce = Math.max(5, -edgeDist) * .5;
         plane.vel.x -= Math.cos(angle) * pushForce * .016;
         plane.vel.z -= Math.sin(angle) * pushForce * .016;
+        // También empujar hacia norte si está al sur
+        if(plane.pos.z > 0) plane.vel.z -= 2 * .016;
         if(navigator.vibrate) navigator.vibrate(50);
-    } else if(dist2D > ZONE_WARN){
+    
+    // CERCA DEL BORDE DEL SECTOR
+    } else if(edgeDist < 40){
         warn.style.display = 'block';
-        warn.textContent = `⚠️ LÍMITE DE ZONA — ${Math.round(ZONE_RADIUS - dist2D)}m`;
+        warn.textContent = `⚠️ LÍMITE DE SECTOR — ${Math.round(edgeDist)}m`;
         warn.style.background = 'rgba(245,158,11,.85)';
     } else {
         warn.style.display = 'none';
@@ -1400,21 +1518,66 @@ function updateMinimap(){
     mmCtx.fillText('E', w-5, cy+3);
     mmCtx.fillText('O', 6, cy+3);
 
-    // Zona 300m — borde rojo
+    // Zona 300m — sector 145° hacia norte
+    // Ángulos del sector en canvas 2D: norte=arriba, +Z=abajo
+    // En canvas: ángulo 0 = derecha, -PI/2 = arriba (norte)
+    // Sector: de -(PI/2 + SECTOR_HALF) a -(PI/2 - SECTOR_HALF)
+    const sectorStartAngle = -Math.PI/2 - SECTOR_HALF;
+    const sectorEndAngle = -Math.PI/2 + SECTOR_HALF;
+    
+    // Relleno semitransparente de la zona válida
+    mmCtx.fillStyle = 'rgba(72,187,120,.08)';
+    mmCtx.beginPath();
+    mmCtx.moveTo(cx, cy);
+    mmCtx.arc(cx, cy, ZONE_RADIUS*scale, sectorStartAngle, sectorEndAngle);
+    mmCtx.closePath();
+    mmCtx.fill();
+    
+    // Borde del sector
     mmCtx.strokeStyle = '#ff4444';
     mmCtx.lineWidth = 2;
     mmCtx.setLineDash([4,3]);
     mmCtx.beginPath();
-    mmCtx.arc(cx, cy, ZONE_RADIUS*scale, 0, Math.PI*2);
+    mmCtx.moveTo(cx, cy);
+    mmCtx.arc(cx, cy, ZONE_RADIUS*scale, sectorStartAngle, sectorEndAngle);
+    mmCtx.closePath();
     mmCtx.stroke();
     mmCtx.setLineDash([]);
 
-    // Zona warning 260m — naranja sutil
+    // Zona warning dentro del sector
     mmCtx.strokeStyle = 'rgba(245,158,11,.25)';
     mmCtx.lineWidth = 1;
     mmCtx.beginPath();
-    mmCtx.arc(cx, cy, ZONE_WARN*scale, 0, Math.PI*2);
+    mmCtx.moveTo(cx, cy);
+    mmCtx.arc(cx, cy, ZONE_WARN*scale, sectorStartAngle, sectorEndAngle);
+    mmCtx.closePath();
     mmCtx.stroke();
+
+    // ======= VÍA DE TREN (línea al sur) =======
+    const trackY = cy + 30*scale; // z=30 al sur
+    mmCtx.strokeStyle = '#888';
+    mmCtx.lineWidth = 3;
+    mmCtx.beginPath();
+    mmCtx.moveTo(4, trackY);
+    mmCtx.lineTo(w-4, trackY);
+    mmCtx.stroke();
+    // Traviesas
+    mmCtx.strokeStyle = '#664';
+    mmCtx.lineWidth = 1;
+    for(let tx = 10; tx < w-10; tx += 6){
+        mmCtx.beginPath();
+        mmCtx.moveTo(tx, trackY-3);
+        mmCtx.lineTo(tx, trackY+3);
+        mmCtx.stroke();
+    }
+    // Etiqueta
+    mmCtx.fillStyle = '#ff6666';
+    mmCtx.font = 'bold 7px sans-serif';
+    mmCtx.textAlign = 'center';
+    mmCtx.fillText('🚂 VÍA TREN ⛔', cx, trackY+12);
+    // Zona prohibida (sur de la vía) — sombreado
+    mmCtx.fillStyle = 'rgba(200,30,30,.12)';
+    mmCtx.fillRect(0, trackY+4, w, h-trackY-4);
 
     // Pista de aterrizaje
     mmCtx.fillStyle = 'rgba(160,160,160,.6)';
