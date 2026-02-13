@@ -468,6 +468,37 @@ let config = {
 // Valores por defecto para reset
 const defaultConfig = {...config};
 
+// Cargar configuración guardada al iniciar
+function loadSavedConfig(){
+    try{
+        const saved = localStorage.getItem('rcSimConfig');
+        if(saved){
+            const parsed = JSON.parse(saved);
+            config = {...config, ...parsed};
+        }
+        const savedPlane = localStorage.getItem('rcSimPlane');
+        if(savedPlane) selectedPlane = savedPlane;
+        const savedDiff = localStorage.getItem('rcSimDiff');
+        if(savedDiff) selectedDiff = savedDiff;
+    }catch(e){
+        console.log('Error cargando configuración:', e);
+    }
+}
+
+// Guardar configuración
+function saveConfig(){
+    try{
+        localStorage.setItem('rcSimConfig', JSON.stringify(config));
+        localStorage.setItem('rcSimPlane', selectedPlane);
+        localStorage.setItem('rcSimDiff', selectedDiff);
+    }catch(e){
+        console.log('Error guardando configuración:', e);
+    }
+}
+
+// Cargar al iniciar
+loadSavedConfig();
+
 // Estado del avión
 let plane = {
     pos: new THREE.Vector3(0, 15, 0),
@@ -2043,7 +2074,21 @@ window.closeSplash = function(){
     setTimeout(()=>{
         splash.style.display = 'none';
         document.getElementById('startScreen').style.display = 'flex';
+        // Aplicar configuración guardada en la pantalla de inicio
+        updateStartScreenFromConfig();
     }, 600);
+}
+function updateStartScreenFromConfig(){
+    // Seleccionar avión guardado
+    document.querySelectorAll('#startScreen .plane-card').forEach(c=>c.classList.remove('selected'));
+    const planeCard = document.querySelector(`#startScreen .plane-card[data-plane="${selectedPlane}"]`);
+    if(planeCard) planeCard.classList.add('selected');
+    // Seleccionar dificultad guardada
+    document.querySelectorAll('#startScreen .diff-btn').forEach(c=>c.classList.remove('selected'));
+    const diffBtn = document.querySelector(`#startScreen .diff-btn[data-diff="${selectedDiff}"]`);
+    if(diffBtn) diffBtn.classList.add('selected');
+    // Construir el avión con el tipo guardado
+    buildPlane(selectedPlane);
 }
 function selectPlane(el){
     document.querySelectorAll('#startScreen .plane-card').forEach(c=>c.classList.remove('selected'));
@@ -2060,11 +2105,13 @@ function selectSetupPlane(el){
     document.querySelectorAll('#setupScreen .plane-card').forEach(c=>c.classList.remove('selected'));
     el.classList.add('selected');
     selectedPlane = el.dataset.plane;
+    saveConfig();
 }
 function selectSetupDiff(el){
     document.querySelectorAll('#setupScreen .diff-btn').forEach(c=>c.classList.remove('selected'));
     el.classList.add('selected');
     selectedDiff = el.dataset.diff;
+    saveConfig();
 }
 function toggleSetupSection(header){
     const section = header.parentElement;
@@ -2079,7 +2126,7 @@ function closeSetup(){
     document.getElementById('setupScreen').style.display = 'none';
 }
 function applySetup(){
-    // Los valores ya están aplicados en tiempo real, solo cerramos
+    // Los valores ya están aplicados y guardados en tiempo real, solo cerramos
     closeSetup();
     // Actualizar las tarjetas de avión en pantalla de inicio
     const selectedCard = document.querySelector('#startScreen .plane-card.selected');
@@ -2099,6 +2146,8 @@ function applySetup(){
     if(newDiffBtn){
         newDiffBtn.classList.add('selected');
     }
+    // Guardar al aplicar
+    saveConfig();
 }
 function resetSetup(){
     config = {...defaultConfig};
@@ -2192,6 +2241,8 @@ function updateSetupValue(param, value){
             document.getElementById('gravityValue').textContent = g.toFixed(2) + ' m/s²';
             break;
     }
+    // Guardar automáticamente cada cambio
+    saveConfig();
 }
 function startGame(){
     initAudio();
