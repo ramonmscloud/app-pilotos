@@ -100,6 +100,28 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:-ap
 #splashBtn:active{transform:scale(.93);}
 #splashBtn:hover{box-shadow:0 6px 30px rgba(246,224,94,.6);transform:scale(1.03);}
 .splash-footer{position:absolute;bottom:20px;font-size:.7rem;color:rgba(255,255,255,.3);}
+
+/* ===== SETUP SCREEN ===== */
+#setupScreen{position:fixed;inset:0;z-index:1500;background:linear-gradient(135deg,#0a1628 0%,#1a365d 40%,#2c5282 100%);display:none;flex-direction:column;align-items:center;color:#fff;padding:20px;overflow-y:auto;}
+#setupScreen h2{font-size:clamp(1.5rem,4vw,2.2rem);margin-bottom:20px;text-shadow:0 2px 10px rgba(0,0,0,.5);}
+.setup-container{width:100%;max-width:700px;background:rgba(0,0,0,.3);border-radius:15px;padding:20px;backdrop-filter:blur(10px);}
+.setup-section{margin-bottom:25px;}
+.setup-section h3{font-size:1.1rem;color:#f6e05e;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.setup-control{margin-bottom:18px;}
+.setup-control label{display:block;color:#90cdf4;font-size:.85rem;margin-bottom:6px;font-weight:600;}
+.setup-slider{width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,.2);outline:none;-webkit-appearance:none;}
+.setup-slider::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#63b3ed;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3);}
+.setup-slider::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#63b3ed;cursor:pointer;border:none;box-shadow:0 2px 8px rgba(0,0,0,.3);}
+.setup-value{display:inline-block;background:rgba(255,255,255,.15);padding:3px 10px;border-radius:8px;font-weight:700;min-width:60px;text-align:center;font-size:.9rem;margin-left:10px;}
+.setup-buttons{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;justify-content:center;}
+.setup-btn{padding:12px 30px;border:none;border-radius:10px;font-size:1rem;cursor:pointer;font-weight:600;transition:all .2s;}
+.setup-btn.primary{background:#3182ce;color:#fff;}
+.setup-btn.primary:active{transform:scale(.95);background:#2c5282;}
+.setup-btn.secondary{background:rgba(255,255,255,.2);color:#fff;}
+.setup-btn.secondary:active{transform:scale(.95);}
+#setupBtn{position:fixed;top:180px;right:15px;pointer-events:all;}
+#setupBtnStart{padding:10px 25px;margin-top:15px;border:none;border-radius:25px;background:linear-gradient(135deg,#f6e05e,#ed8936);color:#1a202c;cursor:pointer;font-weight:700;font-size:.9rem;box-shadow:0 3px 12px rgba(246,224,94,.4);transition:all .2s;}
+#setupBtnStart:active{transform:scale(.95);}
 </style>
 </head>
 <body>
@@ -154,11 +176,109 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:-ap
         <button class="diff-btn" data-diff="hard" onclick="selectDiff(this)">Difícil</button>
     </div>
 
+    <button id="setupBtnStart" onclick="openSetup()">⚙️ SET UP</button>
     <button id="startBtn" onclick="startGame()">🛫 DESPEGAR</button>
     <div class="controls-hint">
         📱 <b>Joystick izquierdo:</b> Throttle ↕ + Yaw ↔<br>
         📱 <b>Joystick derecho:</b> Pitch ↕ + Roll ↔<br>
         🔄 Toca 📷 para cambiar cámara
+    </div>
+</div>
+
+<!-- SETUP SCREEN -->
+<div id="setupScreen">
+    <h2>⚙️ CONFIGURACIÓN AVANZADA</h2>
+    <div class="setup-container">
+        <div class="setup-section">
+            <h3>✈️ Tipo de Aeromodelo</h3>
+            <div class="plane-select" style="justify-content:flex-start;">
+                <div class="plane-card" data-plane="trainer" onclick="selectSetupPlane(this)">
+                    <span class="plane-icon">🛩️</span>
+                    <div class="plane-name">Entrenador</div>
+                </div>
+                <div class="plane-card" data-plane="sport" onclick="selectSetupPlane(this)">
+                    <span class="plane-icon">✈️</span>
+                    <div class="plane-name">Acrobático</div>
+                </div>
+                <div class="plane-card selected" data-plane="glider" onclick="selectSetupPlane(this)">
+                    <span class="plane-icon">🪂</span>
+                    <div class="plane-name">Planeador</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="setup-section">
+            <h3>🎯 Nivel de Dificultad</h3>
+            <div class="diff-select" style="justify-content:flex-start;">
+                <button class="diff-btn" data-diff="easy" onclick="selectSetupDiff(this)">Fácil</button>
+                <button class="diff-btn selected" data-diff="normal" onclick="selectSetupDiff(this)">Normal</button>
+                <button class="diff-btn" data-diff="hard" onclick="selectSetupDiff(this)">Difícil</button>
+            </div>
+        </div>
+
+        <div class="setup-section">
+            <h3>🎮 Controles & Física</h3>
+            <div class="setup-control">
+                <label>🔼 Exponencial Throttle (Acelerador): <span class="setup-value" id="expoThrottleValue">0.00</span></label>
+                <input type="range" class="setup-slider" id="expoThrottleSlider" min="0" max="100" value="0" oninput="updateSetupValue('expoThrottle', this.value)">
+            </div>
+            <div class="setup-control">
+                <label>↔️ Exponencial Yaw (Dirección): <span class="setup-value" id="expoYawValue">0.00</span></label>
+                <input type="range" class="setup-slider" id="expoYawSlider" min="0" max="100" value="0" oninput="updateSetupValue('expoYaw', this.value)">
+            </div>
+            <div class="setup-control">
+                <label>↕️ Exponencial Pitch (Cabeceo): <span class="setup-value" id="expoPitchValue">0.00</span></label>
+                <input type="range" class="setup-slider" id="expoPitchSlider" min="0" max="100" value="0" oninput="updateSetupValue('expoPitch', this.value)">
+            </div>
+            <div class="setup-control">
+                <label>🔄 Exponencial Roll (Alabeo): <span class="setup-value" id="expoRollValue">0.00</span></label>
+                <input type="range" class="setup-slider" id="expoRollSlider" min="0" max="100" value="0" oninput="updateSetupValue('expoRoll', this.value)">
+                <small style="color:#718096;font-size:.75rem;">0 = Lineal, Mayor = Más suave en centro</small>
+            </div>
+            <div class="setup-control">
+                <label>Sustentación (Lift): <span class="setup-value" id="liftValue">1.00x</span></label>
+                <input type="range" class="setup-slider" id="liftSlider" min="50" max="200" value="100" oninput="updateSetupValue('lift', this.value)">
+            </div>
+            <div class="setup-control">
+                <label>Resistencia al Viento (Drag): <span class="setup-value" id="dragValue">1.00x</span></label>
+                <input type="range" class="setup-slider" id="dragSlider" min="20" max="200" value="100" oninput="updateSetupValue('drag', this.value)">
+            </div>
+        </div>
+
+        <div class="setup-section">
+            <h3>⚡ Rendimiento del Aeromodelo</h3>
+            <div class="setup-control">
+                <label>Velocidad Máxima: <span class="setup-value" id="maxSpeedValue">100%</span></label>
+                <input type="range" class="setup-slider" id="maxSpeedSlider" min="50" max="200" value="100" oninput="updateSetupValue('maxSpeed', this.value)">
+            </div>
+            <div class="setup-control">
+                <label>Velocidad de Pérdida (Stall): <span class="setup-value" id="stallValue">100%</span></label>
+                <input type="range" class="setup-slider" id="stallSlider" min="50" max="150" value="100" oninput="updateSetupValue('stall', this.value)">
+            </div>
+            <div class="setup-control">
+                <label>Peso/Inercia: <span class="setup-value" id="inertiaValue">1.00x</span></label>
+                <input type="range" class="setup-slider" id="inertiaSlider" min="50" max="200" value="100" oninput="updateSetupValue('inertia', this.value)">
+                <small style="color:#718096;font-size:.75rem;">Mayor peso = más inercia, responde más lento</small>
+            </div>
+        </div>
+
+        <div class="setup-section">
+            <h3>🌍 Condiciones Ambientales</h3>
+            <div class="setup-control">
+                <label>Intensidad del Viento: <span class="setup-value" id="windValue">100%</span></label>
+                <input type="range" class="setup-slider" id="windSlider" min="0" max="300" value="100" oninput="updateSetupValue('wind', this.value)">
+            </div>
+            <div class="setup-control">
+                <label>Gravedad: <span class="setup-value" id="gravityValue">9.81 m/s²</span></label>
+                <input type="range" class="setup-slider" id="gravitySlider" min="50" max="150" value="100" oninput="updateSetupValue('gravity', this.value)">
+            </div>
+        </div>
+
+        <div class="setup-buttons">
+            <button class="setup-btn primary" onclick="applySetup()">✅ Aplicar y Cerrar</button>
+            <button class="setup-btn secondary" onclick="resetSetup()">🔄 Restaurar Valores</button>
+            <button class="setup-btn secondary" onclick="closeSetup()">✖️ Cancelar</button>
+        </div>
     </div>
 </div>
 
@@ -213,6 +333,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:-ap
 <button class="game-btn" id="pauseBtn" onclick="togglePause()">⏸ Pausa</button>
 <button class="game-btn" id="stabilizeBtn" onclick="toggleStabilize()">🛡️ ESTAB</button>
 <button class="game-btn" id="muteBtn" onclick="toggleMute()">🔊 Sonido</button>
+<button class="game-btn" id="setupBtn" onclick="openSetup()">⚙️ Setup</button>
 <button class="game-btn" id="resetBtn" onclick="resetPlane()">🔄 Reset</button>
 <button class="game-btn" id="fullscreenBtn" onclick="goFullscreen()">⛶ Pantalla</button>
 <div id="stabIndicator">🛡️ AUTOESTABILIZADO</div>
@@ -292,6 +413,26 @@ let gamePaused  = false;
 let crashed = false;
 let autoStabilize = false;
 let soundMuted = false;
+
+// ============================================================
+//  CONFIGURACIÓN PERSONALIZABLE
+// ============================================================
+let config = {
+    expoThrottle: 0.0,   // Exponencial throttle (0-1)
+    expoYaw: 0.0,        // Exponencial yaw (0-1)
+    expoPitch: 0.0,      // Exponencial pitch (0-1)
+    expoRoll: 0.0,       // Exponencial roll (0-1)
+    liftMul: 1.0,        // Multiplicador de sustentación
+    dragMul: 1.0,        // Multiplicador de drag
+    maxSpeedMul: 1.0,    // Multiplicador de velocidad máxima
+    stallMul: 1.0,       // Multiplicador de velocidad de pérdida
+    inertiaMul: 1.0,     // Multiplicador de inercia
+    windMul: 1.0,        // Multiplicador de intensidad del viento
+    gravityMul: 1.0      // Multiplicador de gravedad
+};
+
+// Valores por defecto para reset
+const defaultConfig = {...config};
 
 // Estado del avión
 let plane = {
@@ -1090,6 +1231,19 @@ const keys = {};
 document.addEventListener('keydown', e => { keys[e.code]=true; });
 document.addEventListener('keyup', e => { keys[e.code]=false; });
 
+// Función para aplicar exponencial a un valor de entrada
+function applyExpo(input, expo){
+    // input: -1 a 1
+    // expo: 0 a 1 (0=lineal, mayor=más suave en centro)
+    const sign = Math.sign(input);
+    const abs = Math.abs(input);
+    // Curva exponencial: mezcla lineal con cúbica
+    const linear = abs;
+    const cubic = abs * abs * abs;
+    const mixed = linear * (1 - expo) + cubic * expo;
+    return sign * mixed;
+}
+
 function getInputs(){
     // Stick izquierdo: motor (Y), dirección (X)
     // Stick derecho: pitch (Y), alerones (X)
@@ -1099,27 +1253,28 @@ function getInputs(){
     // Stick izquierdo
     if(joysticks.left.active){
         // Y: abajo=0 (motor parado), arriba=1 (máxima potencia)
+        // Throttle NO usa expo, es directo
         thr = Math.max(0, Math.min(1, (joysticks.left.dy * -0.5) + 0.5));
         // X: izquierda=-1, derecha=1 (dirección)
-        yaw = joysticks.left.dx;
+        yaw = applyExpo(joysticks.left.dx, config.expoYaw);
     }
     // Stick derecho
     if(joysticks.right.active){
         // Y: arriba=1 (picar), abajo=-1 (subir)
-        pitch = joysticks.right.dy;
+        pitch = applyExpo(joysticks.right.dy, config.expoPitch);
         // X: izquierda=-1 (alerones giro izq), derecha=1 (alerones giro der)
-        roll = joysticks.right.dx;
+        roll = applyExpo(joysticks.right.dx, config.expoRoll);
     }
 
     // Keyboard (mantener lógica similar)
     if(keys['KeyW'] || keys['ArrowUp'])   thr = Math.min(1, thr+.015);
     if(keys['KeyS'] || keys['ArrowDown']) thr = Math.max(0, thr-.015);
-    if(keys['KeyA'] || keys['ArrowLeft'])  roll = -1;
-    if(keys['KeyD'] || keys['ArrowRight']) roll = 1;
-    if(keys['KeyQ']) yaw = -1;
-    if(keys['KeyE']) yaw = 1;
-    if(keys['ShiftLeft']) pitch = 1;
-    if(keys['ControlLeft']) pitch = -1;
+    if(keys['KeyA'] || keys['ArrowLeft'])  roll = applyExpo(-1, config.expoRoll);
+    if(keys['KeyD'] || keys['ArrowRight']) roll = applyExpo(1, config.expoRoll);
+    if(keys['KeyQ']) yaw = applyExpo(-1, config.expoYaw);
+    if(keys['KeyE']) yaw = applyExpo(1, config.expoYaw);
+    if(keys['ShiftLeft']) pitch = applyExpo(1, config.expoPitch);
+    if(keys['ControlLeft']) pitch = applyExpo(-1, config.expoPitch);
 
     plane.throttle = thr;
     plane.inputYaw = yaw;
@@ -1137,6 +1292,8 @@ function updatePhysics(dt){
     getInputs();
 
     dt = Math.min(dt, 0.05); // cap
+    // Aplicar inercia (más inercia = más lento)
+    const inertiaDt = dt / config.inertiaMul;
 
     // Rotación
     const rollRate = cfg.turnRate * 2.5;
@@ -1172,7 +1329,7 @@ function updatePhysics(dt){
                 // Nivelar alas completamente
                 plane.rot.z += (-plane.rot.z) * 8.0 * dt;
                 // Mantener nariz recta (pitch 0 hasta velocidad de rotación)
-                if(plane.speed < cfg.stallSpeed * 1.5){
+                if(plane.speed < configStallSpeed * 1.5){
                     plane.rot.x += (0 - plane.rot.x) * 6.0 * dt;
                 } else {
                     // Velocidad de rotación alcanzada → pitched up automático para despegar
@@ -1226,8 +1383,8 @@ function updatePhysics(dt){
             plane.rot.z = Math.max(-maxRollStab, Math.min(maxRollStab, plane.rot.z));
             plane.rot.x = Math.max(-maxPitchStab, Math.min(maxPitchStab, plane.rot.x));
 
-            // Anti-stall automático
-            if(plane.speed < cfg.stallSpeed * 1.3 && plane.pos.y > 5){
+            // Anti-stall automático (con configuración)
+            if(plane.speed < configStallSpeed * 1.3 && plane.pos.y > 5){
                 plane.rot.x += (-10*DEG - plane.rot.x) * 1.5 * dt;
             }
 
@@ -1253,8 +1410,8 @@ function updatePhysics(dt){
     const q = new THREE.Quaternion().setFromEuler(plane.rot);
     fwd.applyQuaternion(q);
 
-    // Empuje
-    const thrust = plane.throttle * cfg.maxSpeed;
+    // Empuje (con multiplicador de velocidad máxima)
+    const thrust = plane.throttle * cfg.maxSpeed * config.maxSpeedMul;
     const isGliding = plane.throttle < 0.05; // motor parado
     
     // Sustentación (depende de velocidad)
@@ -1265,19 +1422,20 @@ function updatePhysics(dt){
     const glideRatio = cfg.liftMul > 1.5 ? 18 : (cfg.liftMul > 1.1 ? 10 : 7);
     
     // En planeo, la sustentación se mantiene mientras haya velocidad
-    // Velocidad mínima de planeo más baja que stallSpeed
-    const minGlideSpeed = cfg.stallSpeed * 0.8;
+    // Velocidad mínima de planeo más baja que stallSpeed (con configuración)
+    const configStallSpeed = cfg.stallSpeed * config.stallMul;
+    const minGlideSpeed = configStallSpeed * 0.8;
     let liftFactor;
     if(isGliding){
         // Planeo: sustentación casi completa si hay velocidad suficiente
-        liftFactor = Math.min(speed / minGlideSpeed, 1.0) * cfg.liftMul * 1.05;
+        liftFactor = Math.min(speed / minGlideSpeed, 1.0) * cfg.liftMul * config.liftMul * 1.05;
     } else {
-        liftFactor = Math.min(speed / cfg.stallSpeed, 1.0) * cfg.liftMul;
+        liftFactor = Math.min(speed / configStallSpeed, 1.0) * cfg.liftMul * config.liftMul;
     }
-    const lift = liftFactor * GRAVITY * dt;
+    const lift = liftFactor * GRAVITY * config.gravityMul * dt;
 
-    // Arrastre — menor en planeo (hélice no frena)
-    const dragBase = isGliding ? cfg.dragMul * .02 : cfg.dragMul * .03;
+    // Arrastre — menor en planeo (hélice no frena), con configuración
+    const dragBase = isGliding ? cfg.dragMul * config.dragMul * .02 : cfg.dragMul * config.dragMul * .03;
     const drag = speed * dragBase;
 
     // Actualizar velocidad
@@ -1292,7 +1450,7 @@ function updatePhysics(dt){
         // Un ratio 18:1 significa que por cada 18m horizontales pierde 1m de altitud
         const descentRate = speed / glideRatio;
         // Compensar parcialmente la gravedad para simular planeo real
-        const glideComp = GRAVITY - descentRate;
+        const glideComp = GRAVITY * config.gravityMul - descentRate;
         plane.vel.y += glideComp * dt * 0.7;
         
         // Si nariz abajo, ganar velocidad (intercambio altitud→velocidad)
@@ -1301,7 +1459,7 @@ function updatePhysics(dt){
             plane.vel.addScaledVector(fwd, diveBoost * dt);
         }
         // Si nariz arriba en planeo, perder velocidad pero ganar altitud temporalmente
-        if(plane.rot.x > 5*DEG && speed > cfg.stallSpeed){
+        if(plane.rot.x > 5*DEG && speed > configStallSpeed){
             plane.vel.y += Math.sin(plane.rot.x) * speed * 0.3 * dt;
         }
     }
@@ -1310,15 +1468,15 @@ function updatePhysics(dt){
     const up = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
     plane.vel.y += lift * 0.7;
 
-    // Gravedad
-    plane.vel.y -= GRAVITY * dt;
+    // Gravedad (con configuración)
+    plane.vel.y -= GRAVITY * config.gravityMul * dt;
 
     // Arrastre
     plane.vel.multiplyScalar(1 - drag * dt);
 
-    // Viento
-    plane.vel.x += wind.x * dt * .5;
-    plane.vel.z += wind.z * dt * .5;
+    // Viento (con configuración)
+    plane.vel.x += wind.x * config.windMul * dt * .5;
+    plane.vel.z += wind.z * config.windMul * dt * .5;
 
     // Actualizar posición
     plane.pos.addScaledVector(plane.vel, dt);
@@ -1854,15 +2012,148 @@ window.closeSplash = function(){
     }, 600);
 }
 function selectPlane(el){
-    document.querySelectorAll('.plane-card').forEach(c=>c.classList.remove('selected'));
+    document.querySelectorAll('#startScreen .plane-card').forEach(c=>c.classList.remove('selected'));
     el.classList.add('selected');
     selectedPlane = el.dataset.plane;
     buildPlane(selectedPlane);
 }
 function selectDiff(el){
-    document.querySelectorAll('.diff-btn').forEach(c=>c.classList.remove('selected'));
+    document.querySelectorAll('#startScreen .diff-btn').forEach(c=>c.classList.remove('selected'));
     el.classList.add('selected');
     selectedDiff = el.dataset.diff;
+}
+function selectSetupPlane(el){
+    document.querySelectorAll('#setupScreen .plane-card').forEach(c=>c.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedPlane = el.dataset.plane;
+}
+function selectSetupDiff(el){
+    document.querySelectorAll('#setupScreen .diff-btn').forEach(c=>c.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedDiff = el.dataset.diff;
+}
+function openSetup(){
+    document.getElementById('setupScreen').style.display = 'flex';
+    // Cargar valores actuales en los sliders
+    loadSetupValues();
+}
+function closeSetup(){
+    document.getElementById('setupScreen').style.display = 'none';
+}
+function applySetup(){
+    // Los valores ya están aplicados en tiempo real, solo cerramos
+    closeSetup();
+    // Actualizar las tarjetas de avión en pantalla de inicio
+    const selectedCard = document.querySelector('#startScreen .plane-card.selected');
+    if(selectedCard){
+        selectedCard.classList.remove('selected');
+    }
+    const newCard = document.querySelector(`#startScreen .plane-card[data-plane="${selectedPlane}"]`);
+    if(newCard){
+        newCard.classList.add('selected');
+    }
+    // Actualizar dificultad
+    const selectedDiffBtn = document.querySelector('#startScreen .diff-btn.selected');
+    if(selectedDiffBtn){
+        selectedDiffBtn.classList.remove('selected');
+    }
+    const newDiffBtn = document.querySelector(`#startScreen .diff-btn[data-diff="${selectedDiff}"]`);
+    if(newDiffBtn){
+        newDiffBtn.classList.add('selected');
+    }
+}
+function resetSetup(){
+    config = {...defaultConfig};
+    selectedPlane = 'glider';
+    selectedDiff = 'normal';
+    loadSetupValues();
+    // Actualizar selección visual
+    document.querySelectorAll('#setupScreen .plane-card').forEach(c=>c.classList.remove('selected'));
+    document.querySelector('#setupScreen .plane-card[data-plane="glider"]').classList.add('selected');
+    document.querySelectorAll('#setupScreen .diff-btn').forEach(c=>c.classList.remove('selected'));
+    document.querySelector('#setupScreen .diff-btn[data-diff="normal"]').classList.add('selected');
+}
+function loadSetupValues(){
+    document.getElementById('expoThrottleSlider').value = config.expoThrottle * 100;
+    document.getElementById('expoYawSlider').value = config.expoYaw * 100;
+    document.getElementById('expoPitchSlider').value = config.expoPitch * 100;
+    document.getElementById('expoRollSlider').value = config.expoRoll * 100;
+    document.getElementById('liftSlider').value = config.liftMul * 100;
+    document.getElementById('dragSlider').value = config.dragMul * 100;
+    document.getElementById('maxSpeedSlider').value = config.maxSpeedMul * 100;
+    document.getElementById('stallSlider').value = config.stallMul * 100;
+    document.getElementById('inertiaSlider').value = config.inertiaMul * 100;
+    document.getElementById('windSlider').value = config.windMul * 100;
+    document.getElementById('gravitySlider').value = config.gravityMul * 100;
+    // Actualizar displays
+    updateSetupValue('expoThrottle', config.expoThrottle * 100);
+    updateSetupValue('expoYaw', config.expoYaw * 100);
+    updateSetupValue('expoPitch', config.expoPitch * 100);
+    updateSetupValue('expoRoll', config.expoRoll * 100);
+    updateSetupValue('lift', config.liftMul * 100);
+    updateSetupValue('drag', config.dragMul * 100);
+    updateSetupValue('maxSpeed', config.maxSpeedMul * 100);
+    updateSetupValue('stall', config.stallMul * 100);
+    updateSetupValue('inertia', config.inertiaMul * 100);
+    updateSetupValue('wind', config.windMul * 100);
+    updateSetupValue('gravity', config.gravityMul * 100);
+    // Actualizar selección de avión y dificultad
+    document.querySelectorAll('#setupScreen .plane-card').forEach(c=>c.classList.remove('selected'));
+    const planeCard = document.querySelector(`#setupScreen .plane-card[data-plane="${selectedPlane}"]`);
+    if(planeCard) planeCard.classList.add('selected');
+    document.querySelectorAll('#setupScreen .diff-btn').forEach(c=>c.classList.remove('selected'));
+    const diffBtn = document.querySelector(`#setupScreen .diff-btn[data-diff="${selectedDiff}"]`);
+    if(diffBtn) diffBtn.classList.add('selected');
+}
+function updateSetupValue(param, value){
+    const val = parseFloat(value);
+    switch(param){
+        case 'expoThrottle':
+            config.expoThrottle = val / 100;
+            document.getElementById('expoThrottleValue').textContent = config.expoThrottle.toFixed(2);
+            break;
+        case 'expoYaw':
+            config.expoYaw = val / 100;
+            document.getElementById('expoYawValue').textContent = config.expoYaw.toFixed(2);
+            break;
+        case 'expoPitch':
+            config.expoPitch = val / 100;
+            document.getElementById('expoPitchValue').textContent = config.expoPitch.toFixed(2);
+            break;
+        case 'expoRoll':
+            config.expoRoll = val / 100;
+            document.getElementById('expoRollValue').textContent = config.expoRoll.toFixed(2);
+            break;
+        case 'lift':
+            config.liftMul = val / 100;
+            document.getElementById('liftValue').textContent = config.liftMul.toFixed(2) + 'x';
+            break;
+        case 'drag':
+            config.dragMul = val / 100;
+            document.getElementById('dragValue').textContent = config.dragMul.toFixed(2) + 'x';
+            break;
+        case 'maxSpeed':
+            config.maxSpeedMul = val / 100;
+            document.getElementById('maxSpeedValue').textContent = Math.round(val) + '%';
+            break;
+        case 'stall':
+            config.stallMul = val / 100;
+            document.getElementById('stallValue').textContent = Math.round(val) + '%';
+            break;
+        case 'inertia':
+            config.inertiaMul = val / 100;
+            document.getElementById('inertiaValue').textContent = config.inertiaMul.toFixed(2) + 'x';
+            break;
+        case 'wind':
+            config.windMul = val / 100;
+            document.getElementById('windValue').textContent = Math.round(val) + '%';
+            break;
+        case 'gravity':
+            config.gravityMul = val / 100;
+            const g = 9.81 * config.gravityMul;
+            document.getElementById('gravityValue').textContent = g.toFixed(2) + ' m/s²';
+            break;
+    }
 }
 function startGame(){
     initAudio();
