@@ -296,6 +296,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:-ap
                 <input type="range" class="setup-slider" id="inertiaSlider" min="50" max="200" value="100" oninput="updateSetupValue('inertia', this.value)">
                 <small style="color:#718096;font-size:.75rem;">Mayor peso = más inercia, responde más lento</small>
             </div>
+            <div class="setup-control">
+                <label>⚡ Potencia del Motor: <span class="setup-value" id="motorPowerValue">700 W [400-1000]</span></label>
+                <input type="range" class="setup-slider" id="motorPowerSlider" min="400" max="1000" value="700" oninput="updateSetupValue('motorPower', this.value)">
+                <small style="color:#718096;font-size:.75rem;">Mayor potencia = más empuje y aceleración</small>
+            </div>
                 </div>
             </div>
 
@@ -495,7 +500,8 @@ let config = {
     defaultCamera: 1,    // Cámara por defecto: 0=Persecución, 1=Desde Tierra, 2=Orbital
     groundZoom: 1.0,     // Magnificación vista desde tierra (0.5=menos zoom, 3.0=más zoom)
     mass: 2.5,           // Peso del modelo en kg (0.5-10 kg)
-    wingspan: 2.5        // Envergadura del modelo en metros (0.5-5 m)
+    wingspan: 2.5,       // Envergadura del modelo en metros (0.5-5 m)
+    motorPower: 700      // Potencia del motor en watts (400-1000 W)
 };
 
 // Valores por defecto para reset
@@ -1508,8 +1514,10 @@ function updatePhysics(dt){
     const q = new THREE.Quaternion().setFromEuler(plane.rot);
     fwd.applyQuaternion(q);
 
-    // Empuje (con multiplicador de velocidad máxima)
-    const thrust = plane.throttle * cfg.maxSpeed * config.maxSpeedMul;
+    // Empuje (con multiplicador de velocidad máxima y potencia del motor)
+    // La potencia del motor (400-1000W) afecta el empuje: 700W es base (1.0x)
+    const powerFactor = config.motorPower / 700;
+    const thrust = plane.throttle * cfg.maxSpeed * config.maxSpeedMul * powerFactor;
     const isGliding = plane.throttle < 0.05; // motor parado
     
     // Sustentación (depende de velocidad)
@@ -2230,6 +2238,7 @@ function loadSetupValues(){
     document.getElementById('zoomSlider').value = config.groundZoom * 100;
     document.getElementById('massSlider').value = config.mass * 100;
     document.getElementById('wingspanSlider').value = config.wingspan * 100;
+    document.getElementById('motorPowerSlider').value = config.motorPower;
     // Actualizar displays
     updateSetupValue('expoThrottle', config.expoThrottle * 100);
     updateSetupValue('expoYaw', config.expoYaw * 100);
@@ -2245,6 +2254,7 @@ function loadSetupValues(){
     updateSetupValue('zoom', config.groundZoom * 100);
     updateSetupValue('mass', config.mass * 100);
     updateSetupValue('wingspan', config.wingspan * 100);
+    updateSetupValue('motorPower', config.motorPower);
     // Actualizar selección de avión y dificultad
     document.querySelectorAll('#setupScreen .plane-card').forEach(c=>c.classList.remove('selected'));
     const planeCard = document.querySelector(`#setupScreen .plane-card[data-plane="${selectedPlane}"]`);
@@ -2330,6 +2340,10 @@ function updateSetupValue(param, value){
         case 'wingspan':
             config.wingspan = val / 100;
             document.getElementById('wingspanValue').textContent = config.wingspan.toFixed(2) + ' m [0.50-5.00]';
+            break;
+        case 'motorPower':
+            config.motorPower = val;
+            document.getElementById('motorPowerValue').textContent = config.motorPower.toFixed(0) + ' W [400-1000]';
             break;
     }
     // Guardar automáticamente cada cambio
