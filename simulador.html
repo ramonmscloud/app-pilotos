@@ -282,7 +282,7 @@ const DIFFICULTY = {
     hard:   { wind:7, rings:15, ringSize:10, ringSpeed:.8 }
 };
 
-let selectedPlane = 'trainer';
+let selectedPlane = 'glider';
 let selectedDiff  = 'normal';
 let gameStarted = false;
 let gamePaused  = false;
@@ -358,59 +358,58 @@ let cameraMode = 0; // 0=chase, 1=ground, 2=orbit
 const cameraNames = ['Persecución','Desde Tierra','Orbital'];
 
 // ============================================================
-//  TERRENO — con imagen CRA zona de vuelo
+//  TERRENO DINÁMICO — Semicírculo con pista y arbolado
 // ============================================================
-const groundSize = 1200;
-const groundGeo = new THREE.PlaneGeometry(groundSize, groundSize, 128, 128);
-// Generar ondulaciones
-const verts = groundGeo.attributes.position;
-for(let i = 0; i < verts.count; i++){
-    const x = verts.getX(i), y = verts.getY(i);
-    const d = Math.sqrt(x*x + y*y);
-    // Zona central plana (pista), ondulaciones periféricas
-    const flatZone = Math.max(0, 1 - d/100);
-    const h = (Math.sin(x*.01)*3 + Math.cos(y*.015)*2 + Math.sin((x+y)*.008)*4) * (1 - flatZone);
-    verts.setZ(i, h);
-}
-groundGeo.computeVertexNormals();
-groundGeo.rotateX(-Math.PI/2);
+const groundGroup = new THREE.Group();
 
-// Material base del terreno
-const groundMat = new THREE.MeshStandardMaterial({
-    color: 0x4a7c3f,
-    roughness: .9,
-    metalness: 0
-});
-
-// Cargar imagen CRA como textura
-const textureLoader = new THREE.TextureLoader();
-textureLoader.load('CRA%20zona%20de%20vuelo.jpeg', function(tex){
-    tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
-    tex.minFilter = THREE.LinearFilter;
-    // Overlay de imagen centrada en zona de vuelo (600x600 matching 300m radius)
-    const imgGeo = new THREE.PlaneGeometry(620, 620);
-    imgGeo.rotateX(-Math.PI/2);
-    const imgMat = new THREE.MeshBasicMaterial({ map:tex, transparent:true, opacity:.7, depthWrite:false });
-    const imgPlane = new THREE.Mesh(imgGeo, imgMat);
-    imgPlane.position.y = 0.15;
-    scene.add(imgPlane);
-}, undefined, function(){
-    console.warn('No se pudo cargar CRA zona de vuelo.jpeg');
-});
-
+// Crear el suelo semicircular
+const groundGeo = new THREE.CircleGeometry(150, 64, Math.PI, Math.PI);
+const groundMat = new THREE.MeshStandardMaterial({ color: 0x228B22, side: THREE.DoubleSide });
 const ground = new THREE.Mesh(groundGeo, groundMat);
-ground.receiveShadow = true;
-scene.add(ground);
+ground.rotation.x = -Math.PI / 2;
+groundGroup.add(ground);
+
+// Crear la pista (rectángulo en el centro)
+const runwayGeo = new THREE.PlaneGeometry(20, 100);
+const runwayMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+const runway = new THREE.Mesh(runwayGeo, runwayMat);
+runway.rotation.x = -Math.PI / 2;
+runway.position.set(0, 0.01, -50);
+groundGroup.add(runway);
+
+// Generar árboles alrededor del borde del suelo
+const treeGeo = new THREE.CylinderGeometry(1, 1.5, 10, 8);
+const treeMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+const foliageGeo = new THREE.SphereGeometry(5, 8, 8);
+const foliageMat = new THREE.MeshStandardMaterial({ color: 0x006400 });
+
+for (let i = 0; i < 30; i++) {
+    const angle = Math.PI + (i / 30) * Math.PI; // Distribuir en el borde semicircular
+    const x = Math.cos(angle) * 140;
+    const z = Math.sin(angle) * 140;
+
+    // Tronco
+    const trunk = new THREE.Mesh(treeGeo, treeMat);
+    trunk.position.set(x, 5, z);
+    groundGroup.add(trunk);
+
+    // Follaje
+    const foliage = new THREE.Mesh(foliageGeo, foliageMat);
+    foliage.position.set(x, 15, z);
+    groundGroup.add(foliage);
+}
+
+scene.add(groundGroup);
 
 // ============================================================
 //  PISTA DE ATERRIZAJE
 // ============================================================
-const runwayGeo = new THREE.PlaneGeometry(8, 80);
-runwayGeo.rotateX(-Math.PI/2);
-const runwayMat = new THREE.MeshStandardMaterial({color:0x555555, roughness:.7});
-const runway = new THREE.Mesh(runwayGeo, runwayMat);
-runway.position.y = 0.12;
-scene.add(runway);
+const landingRunwayGeo = new THREE.PlaneGeometry(8, 80);
+landingRunwayGeo.rotateX(-Math.PI/2);
+const landingRunwayMat = new THREE.MeshStandardMaterial({color:0x555555, roughness:.7});
+const landingRunway = new THREE.Mesh(landingRunwayGeo, landingRunwayMat);
+landingRunway.position.y = 0.12;
+scene.add(landingRunway);
 // Marcas de pista
 for(let i = -35; i <= 35; i += 10){
     const mk = new THREE.Mesh(
@@ -573,235 +572,292 @@ function buildPlane(type){
     const darkMat = new THREE.MeshStandardMaterial({color:0x222222, metalness:.4, roughness:.6});
     const glassMat = new THREE.MeshStandardMaterial({color:0x87CEEB, metalness:.9, roughness:.1, transparent:true, opacity:.7});
 
-    // ---- Fuselaje (forma aerodinámica con morro afilado) ----
-    // Sección principal — cilindro suavizado
-    const fuseMain = new THREE.Mesh(
-        new THREE.CylinderGeometry(.28,.22, 4.0, 12),
-        bodyMat
-    );
-    fuseMain.rotation.z = Math.PI/2;
-    g.add(fuseMain);
+    if(type === 'glider') {
+        // ═══════════════════════════════════════════════════════
+        //  PLANEADOR ESTILIZADO 4m — Formas aerodinámicas
+        //  Fuselaje fluido con cilindros/esferas
+        //  Alas delgadas de alta relación de aspecto
+        // ═══════════════════════════════════════════════════════
 
-    // Morro cónico afilado
-    const nose = new THREE.Mesh(
-        new THREE.ConeGeometry(.28, 1.2, 12),
-        bodyMat
-    );
-    nose.rotation.z = -Math.PI/2;
-    nose.position.x = 2.6;
-    g.add(nose);
+        const white = new THREE.MeshStandardMaterial({
+            color:0xfafafa, 
+            metalness:0.08, 
+            roughness:0.15,
+            side: THREE.DoubleSide
+        });
+        const accent = new THREE.MeshStandardMaterial({
+            color:0xd8d8d8, 
+            metalness:0.12, 
+            roughness:0.25
+        });
 
-    // Cola cónica afinada
-    const tailCone = new THREE.Mesh(
-        new THREE.ConeGeometry(.22, 2.2, 10),
-        bodyMat
-    );
-    tailCone.rotation.z = Math.PI/2;
-    tailCone.position.x = -3.1;
-    g.add(tailCone);
-
-    // Viga de cola (boom) fina
-    const tailBoom = new THREE.Mesh(
-        new THREE.CylinderGeometry(.06,.04, 1.8, 8),
-        bodyMat
-    );
-    tailBoom.rotation.z = Math.PI/2;
-    tailBoom.position.x = -4.9;
-    g.add(tailBoom);
-
-    // ---- Cabina / Canopy ----
-    const canopy = new THREE.Mesh(
-        new THREE.SphereGeometry(.32, 12, 8, 0, Math.PI*2, 0, Math.PI/2),
-        glassMat
-    );
-    canopy.position.set(.6, .22, 0);
-    canopy.scale.set(2.0, .85, .75);
-    g.add(canopy);
-    // Marco canopy
-    const canopyFrame = new THREE.Mesh(
-        new THREE.TorusGeometry(.30, .02, 6, 16, Math.PI),
-        darkMat
-    );
-    canopyFrame.position.set(.6, .22, 0);
-    canopyFrame.rotation.y = Math.PI/2;
-    canopyFrame.scale.set(2.0, .85, .75);
-    g.add(canopyFrame);
-
-    // ---- Alas largas de motovelero (gran envergadura) ----
-    // Ala — forma trapezoidal con extrusión
-    function createWing(side){
-        const wg = new THREE.Group();
-        const span = 4.5; // semi-envergadura
-        const rootChord = 1.0;
-        const tipChord = .45;
+        // ── FUSELAJE ESTILIZADO (total ~3.8m: z -1.6 hasta +2.2) ──
         
-        // Perfil alar con forma — BoxGeometry afinada
-        const segments = 8;
-        for(let i = 0; i < segments; i++){
-            const t = i / segments;
-            const t2 = (i+1) / segments;
-            const c1 = rootChord * (1-t) + tipChord * t;
-            const c2 = rootChord * (1-t2) + tipChord * t2;
-            const segLen = span / segments;
-            
-            const shape = new THREE.Shape();
-            // Perfil aerodinámico simplificado
-            shape.moveTo(-c1/2, 0);
-            shape.quadraticCurveTo(-c1/4, c1*.08, 0, c1*.1);
-            shape.quadraticCurveTo(c1/4, c1*.07, c1/2, 0);
-            shape.quadraticCurveTo(c1/4, -c1*.03, 0, -c1*.02);
-            shape.quadraticCurveTo(-c1/4, -c1*.02, -c1/2, 0);
-            
-            const extrudeSettings = { depth: segLen, bevelEnabled: false };
-            const seg = new THREE.Mesh(
-                new THREE.ExtrudeGeometry(shape, extrudeSettings),
-                bodyMat
-            );
-            seg.rotation.x = -Math.PI/2;
-            seg.position.set(0, 0, side * (t * span + .2));
-            if(side < 0) seg.position.z -= segLen;
-            seg.castShadow = true;
-            wg.add(seg);
-        }
-        
-        // Winglet (punta alar curvada)
-        const winglet = new THREE.Mesh(
-            new THREE.BoxGeometry(tipChord*.6, .03, .5),
-            accentMat
+        // Morro ultra-afilado (esfera + cilindros cónicos)
+        const noseTip = new THREE.Mesh(
+            new THREE.SphereGeometry(0.025, 8, 8), white
         );
-        winglet.position.set(0, .2, side*(span+.3));
-        winglet.rotation.x = side * .3;
-        wg.add(winglet);
+        noseTip.position.set(0, 0, -1.60);
+        noseTip.scale.set(1, 1, 2.5);
+        g.add(noseTip);
         
-        return wg;
-    }
-    
-    const leftWing = createWing(-1);
-    g.add(leftWing);
-    const rightWing = createWing(1);
-    g.add(rightWing);
-
-    // ---- Alerón en cada ala (superficies de control) ----
-    function createAileron(side){
-        const ail = new THREE.Mesh(
-            new THREE.BoxGeometry(.35, .025, 1.2),
-            accentMat
+        const nose1 = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.06, 0.025, 0.40, 12), white
         );
-        ail.position.set(-.25, 0, side*3.2);
-        return ail;
-    }
-    g.add(createAileron(-1));
-    g.add(createAileron(1));
+        nose1.rotation.x = Math.PI/2;
+        nose1.position.set(0, 0, -1.30);
+        g.add(nose1);
+        
+        const nose2 = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.12, 0.06, 0.50, 12), white
+        );
+        nose2.rotation.x = Math.PI/2;
+        nose2.position.set(0, 0, -0.90);
+        g.add(nose2);
 
-    // ---- Estabilizador horizontal (forma T o cruciforme) ----
-    const hStab = new THREE.Group();
-    // Plano horizontal
-    for(let side of [-1, 1]){
-        const stab = new THREE.Mesh(
-            new THREE.BoxGeometry(.6, .03, 1.2),
+        // Pod central (donde va el piloto) - más ancho
+        const pod = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.14, 0.12, 0.90, 16), white
+        );
+        pod.rotation.x = Math.PI/2;
+        pod.position.set(0, 0, -0.20);
+        g.add(pod);
+
+        // Canopy transparente integrado
+        const canopy = new THREE.Mesh(
+            new THREE.SphereGeometry(0.13, 12, 8, 0, Math.PI*2, 0, Math.PI/2),
+            glassMat
+        );
+        canopy.position.set(0, 0.08, -0.35);
+        canopy.scale.set(0.95, 0.9, 2.0);
+        g.add(canopy);
+
+        // Transición suave al boom
+        const trans = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.06, 0.14, 0.80, 14), white
+        );
+        trans.rotation.x = Math.PI/2;
+        trans.position.set(0, 0, 0.65);
+        g.add(trans);
+
+        // Boom de cola (muy delgado y largo)
+        const boom = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.025, 0.06, 1.40, 12), white
+        );
+        boom.rotation.x = Math.PI/2;
+        boom.position.set(0, 0, 1.75);
+        g.add(boom);
+
+        // ── ALAS (4m envergadura, perfil aerodinámico) ──
+        
+        // Ala principal - perfil airfoil simulado con BoxGeometry muy delgada
+        const wing = new THREE.Mesh(
+            new THREE.BoxGeometry(4.0, 0.035, 0.22), white
+        );
+        wing.position.set(0, 0.09, -0.08);
+        g.add(wing);
+        
+        // Refuerzo central del ala
+        const wingRoot = new THREE.Mesh(
+            new THREE.BoxGeometry(0.30, 0.045, 0.24), white
+        );
+        wingRoot.position.set(0, 0.09, -0.08);
+        g.add(wingRoot);
+
+        // Alerones estilizados en las puntas
+        const ailL = new THREE.Mesh(
+            new THREE.BoxGeometry(0.75, 0.022, 0.070), accent
+        );
+        ailL.position.set(-1.63, 0.09, 0.05);
+        g.add(ailL);
+        
+        const ailR = new THREE.Mesh(
+            new THREE.BoxGeometry(0.75, 0.022, 0.070), accent
+        );
+        ailR.position.set(1.63, 0.09, 0.05);
+        g.add(ailR);
+
+        // Winglets/puntas de ala ligeramente curvadas
+        const tipL = new THREE.Mesh(
+            new THREE.BoxGeometry(0.03, 0.15, 0.08), accent
+        );
+        tipL.position.set(-2.01, 0.16, 0.03);
+        tipL.rotation.z = -0.15;
+        g.add(tipL);
+        
+        const tipR = new THREE.Mesh(
+            new THREE.BoxGeometry(0.03, 0.15, 0.08), accent
+        );
+        tipR.position.set(2.01, 0.16, 0.03);
+        tipR.rotation.z = 0.15;
+        g.add(tipR);
+
+        // ── COLA EN T ESTILIZADA ──
+        
+        // Estabilizador vertical (aleta)
+        const vStab = new THREE.Mesh(
+            new THREE.BoxGeometry(0.028, 0.42, 0.20), white
+        );
+        vStab.position.set(0, 0.21, 2.20);
+        g.add(vStab);
+        
+        // Carenado base del vertical
+        const vFairing = new THREE.Mesh(
+            new THREE.SphereGeometry(0.035, 8, 8), white
+        );
+        vFairing.position.set(0, 0.01, 2.20);
+        vFairing.scale.set(1.2, 0.6, 1.5);
+        g.add(vFairing);
+
+        // Timón
+        const rudder = new THREE.Mesh(
+            new THREE.BoxGeometry(0.020, 0.36, 0.085), accent
+        );
+        rudder.position.set(0, 0.20, 2.35);
+        g.add(rudder);
+
+        // Estabilizador horizontal (T-tail en la cima)
+        const hStab = new THREE.Mesh(
+            new THREE.BoxGeometry(0.70, 0.025, 0.13), white
+        );
+        hStab.position.set(0, 0.42, 2.20);
+        g.add(hStab);
+
+        // Elevador
+        const elev = new THREE.Mesh(
+            new THREE.BoxGeometry(0.70, 0.018, 0.065), accent
+        );
+        elev.position.set(0, 0.42, 2.30);
+        g.add(elev);
+
+        // ── TREN DE ATERRIZAJE MINIMALISTA ──
+        
+        // Rueda principal (pequeña y retráctil visualmente)
+        const wheelHub = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.038, 0.038, 0.025, 12), darkMat
+        );
+        wheelHub.rotation.z = Math.PI/2;
+        wheelHub.position.set(0, -0.13, -0.05);
+        g.add(wheelHub);
+        
+        const wheelRim = new THREE.Mesh(
+            new THREE.TorusGeometry(0.038, 0.012, 8, 12), darkMat
+        );
+        wheelRim.rotation.y = Math.PI/2;
+        wheelRim.position.set(0, -0.13, -0.05);
+        g.add(wheelRim);
+
+        // Patín de cola aerodinámico
+        const skid = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.012, 0.012, 0.12, 8), darkMat
+        );
+        skid.rotation.x = Math.PI/2;
+        skid.position.set(0, -0.025, 2.15);
+        g.add(skid);
+
+    } else {
+        // ---- OTROS AVIONES (Trainer / Sport) CONSERVADOS ----
+        
+        // Sección principal — cilindro suavizado
+        const fuseMain = new THREE.Mesh(
+            new THREE.CylinderGeometry(.18,.15, 3.5, 12),
             bodyMat
         );
-        stab.position.set(-5.6, .15, side*.7);
-        stab.castShadow = true;
-        g.add(stab);
-        // Elevador
-        const elevator = new THREE.Mesh(
-            new THREE.BoxGeometry(.2, .02, 1.0),
-            accentMat
+        fuseMain.position.set(0, 0.18, 0);
+        g.add(fuseMain);
+
+        // Morro cónico afilado
+        const nose = new THREE.Mesh(
+            new THREE.ConeGeometry(.18, 0.8, 12),
+            bodyMat
         );
-        elevator.position.set(-5.9, .15, side*.7);
-        g.add(elevator);
+        nose.position.set(0, 0.18, -1.85);
+        g.add(nose);
+
+        // Cabina / Canopy
+        const canopy = new THREE.Mesh(
+            new THREE.SphereGeometry(.18, 12, 8, 0, Math.PI*2, 0, Math.PI/2),
+            glassMat
+        );
+        canopy.position.set(0, 0.32, -1.1);
+        canopy.scale.set(1.1, 0.7, 1.1);
+        g.add(canopy);
+        // Marco canopy
+        const canopyFrame = new THREE.Mesh(
+            new THREE.TorusGeometry(.17, .015, 6, 16, Math.PI),
+            darkMat
+        );
+        canopyFrame.position.set(0, 0.32, -1.1);
+        canopyFrame.rotation.x = Math.PI/2;
+        canopyFrame.scale.set(1.1, 0.7, 1.1);
+        g.add(canopyFrame);
+
+        // Cola cónica afinada
+        const tailCone = new THREE.Mesh(
+            new THREE.ConeGeometry(.15, 1.2, 10),
+            bodyMat
+        );
+        tailCone.position.set(0, 0.18, 1.75);
+        g.add(tailCone);
+
+        // Viga de cola (boom) fina
+        const tailBoom = new THREE.Mesh(
+            new THREE.CylinderGeometry(.04,.03, 1.2, 8),
+            bodyMat
+        );
+        tailBoom.position.set(0, 0.18, 2.4);
+        g.add(tailBoom);
+        
+        // Alas estandar
+        const wingSpan = type==='trainer'?2.5:2.0;
+        const mainWing = new THREE.Mesh(new THREE.BoxGeometry(wingSpan, 0.06, 0.5), bodyMat);
+        mainWing.position.set(0, 0.2, 0);
+        g.add(mainWing);
+        
+        // Empennage Estandar
+        const hStab = new THREE.Mesh(
+            new THREE.BoxGeometry(1.0, 0.04, 0.4), bodyMat
+        );
+        hStab.position.set(0, 0.2, 2.8);
+        g.add(hStab);
+        
+        const vStab = new THREE.Mesh(
+            new THREE.BoxGeometry(0.05, 0.6, 0.4), bodyMat
+        );
+        vStab.position.set(0, 0.5, 2.8);
+        g.add(vStab);
+
+        // Tren
+        const wheelStrut = new THREE.Mesh(
+            new THREE.CylinderGeometry(.02,.02,.35,6),
+            darkMat
+        );
+        wheelStrut.position.set(0, -.28, 0);
+        g.add(wheelStrut);
+        const mainWheel = new THREE.Mesh(
+            new THREE.TorusGeometry(.08,.03,8,12),
+            darkMat
+        );
+        mainWheel.position.set(0, -.47, 0);
+        mainWheel.rotation.y = Math.PI/2;
+        g.add(mainWheel);
+        
+        // Propeller
+        const spinner = new THREE.Mesh(new THREE.ConeGeometry(.12, .3, 10), darkMat);
+        spinner.rotation.x = -Math.PI/2;
+        spinner.position.set(0, 0.18, -1.9); // nose pos approx
+        g.add(spinner);
+        
+        const propGroup = new THREE.Group();
+        propGroup.name = 'propeller';
+        propGroup.position.set(0, 0.18, -1.85);
+        const b1 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.05, 0.02), darkMat);
+        propGroup.add(b1);
+        const b2 = b1.clone(); b2.rotation.z = Math.PI/2;
+        propGroup.add(b2);
+        g.add(propGroup);
+
     }
-
-    // ---- Estabilizador vertical (deriva) ----
-    const vStab = new THREE.Mesh(
-        new THREE.BoxGeometry(.7, .03, 1.1),
-        bodyMat
-    );
-    vStab.position.set(-5.5, .7, 0);
-    vStab.rotation.x = Math.PI/2;
-    vStab.castShadow = true;
-    g.add(vStab);
-
-    // Timón de dirección
-    const rudder = new THREE.Mesh(
-        new THREE.BoxGeometry(.25, .02, .9),
-        accentMat
-    );
-    rudder.position.set(-5.85, .6, 0);
-    rudder.rotation.x = Math.PI/2;
-    g.add(rudder);
-
-    // ---- Tren de aterrizaje ----
-    // Rueda principal central
-    const wheelStrut = new THREE.Mesh(
-        new THREE.CylinderGeometry(.02,.02,.35,6),
-        darkMat
-    );
-    wheelStrut.position.set(0, -.28, 0);
-    g.add(wheelStrut);
-    const mainWheel = new THREE.Mesh(
-        new THREE.TorusGeometry(.08,.03,8,12),
-        darkMat
-    );
-    mainWheel.position.set(0, -.47, 0);
-    mainWheel.rotation.y = Math.PI/2;
-    g.add(mainWheel);
-
-    // Patín de cola
-    const tailSkid = new THREE.Mesh(
-        new THREE.CylinderGeometry(.015,.015,.15,6),
-        darkMat
-    );
-    tailSkid.position.set(-3.8, -.2, 0);
-    tailSkid.rotation.z = .3;
-    g.add(tailSkid);
-
-    // ---- Motor y hélice (en el morro) ----
-    // Spinner (cono de hélice)
-    const spinner = new THREE.Mesh(
-        new THREE.ConeGeometry(.12, .3, 10),
-        darkMat
-    );
-    spinner.rotation.z = -Math.PI/2;
-    spinner.position.x = 3.3;
-    g.add(spinner);
-
-    // Hélice plegable (2 palas finas)
-    const propGroup = new THREE.Group();
-    propGroup.position.x = 3.15;
-    
-    const blade1 = new THREE.Mesh(
-        new THREE.BoxGeometry(.04, 1.0, .1),
-        new THREE.MeshStandardMaterial({color:0x1a1a1a, metalness:.5, roughness:.4})
-    );
-    blade1.name = 'propeller';
-    propGroup.add(blade1);
-    
-    const blade2 = blade1.clone();
-    blade2.rotation.x = Math.PI/2;
-    blade2.name = 'propeller2';
-    propGroup.add(blade2);
-    
-    g.add(propGroup);
-
-    // ---- Detalles extra ----
-    // Tubo pitot en ala izquierda
-    const pitot = new THREE.Mesh(
-        new THREE.CylinderGeometry(.008,.008,.6,4),
-        darkMat
-    );
-    pitot.rotation.z = Math.PI/2;
-    pitot.position.set(.5, 0, -4.2);
-    g.add(pitot);
-
-    // Antena dorsal
-    const antenna = new THREE.Mesh(
-        new THREE.CylinderGeometry(.005,.005,.4,4),
-        darkMat
-    );
-    antenna.position.set(-.5, .45, 0);
-    g.add(antenna);
 
     g.castShadow = true;
     g.scale.set(1.3, 1.3, 1.3);
@@ -1032,20 +1088,27 @@ document.addEventListener('keydown', e => { keys[e.code]=true; });
 document.addEventListener('keyup', e => { keys[e.code]=false; });
 
 function getInputs(){
-    // Joystick: left = throttle(Y)/yaw(X), right = pitch(Y)/roll(X)
+    // Stick izquierdo: motor (Y), dirección (X)
+    // Stick derecho: pitch (Y), alerones (X)
     let thr = plane.throttle;
     let yaw = 0, pitch = 0, roll = 0;
 
+    // Stick izquierdo
     if(joysticks.left.active){
-        thr = Math.max(0, Math.min(1, thr - joysticks.left.dy * .02));
+        // Y: abajo=0 (motor parado), arriba=1 (máxima potencia)
+        thr = Math.max(0, Math.min(1, (joysticks.left.dy * -0.5) + 0.5));
+        // X: izquierda=-1, derecha=1 (dirección)
         yaw = joysticks.left.dx;
     }
+    // Stick derecho
     if(joysticks.right.active){
-        pitch = -joysticks.right.dy;
+        // Y: arriba=1 (picar), abajo=-1 (subir)
+        pitch = joysticks.right.dy;
+        // X: izquierda=-1 (alerones giro izq), derecha=1 (alerones giro der)
         roll = joysticks.right.dx;
     }
 
-    // Keyboard
+    // Keyboard (mantener lógica similar)
     if(keys['KeyW'] || keys['ArrowUp'])   thr = Math.min(1, thr+.015);
     if(keys['KeyS'] || keys['ArrowDown']) thr = Math.max(0, thr-.015);
     if(keys['KeyA'] || keys['ArrowLeft'])  roll = -1;
@@ -1410,11 +1473,7 @@ function updatePlaneMesh(){
     planeMesh.position.copy(plane.pos);
     planeMesh.rotation.copy(plane.rot);
     
-    // Hélice girando
-    planeMesh.children.forEach(c => {
-        if(c.name === 'propeller') c.rotation.x += plane.throttle * .8 + .1;
-        if(c.name === 'propeller2') c.rotation.x += plane.throttle * .8 + .1;
-    });
+
 }
 
 // ============================================================
@@ -1781,7 +1840,7 @@ requestAnimationFrame(preRenderLoop);
 // ============================================================
 //  UI FUNCIONES
 // ============================================================
-function closeSplash(){
+window.closeSplash = function(){
     const splash = document.getElementById('splashScreen');
     splash.style.transition = 'opacity .6s ease, transform .6s ease';
     splash.style.opacity = '0';
@@ -1811,7 +1870,8 @@ function startGame(){
     // Reset avión
     plane.pos.set(0, .8, 0);
     plane.vel.set(0, 0, 0);
-    plane.rot.set(0, 0, 0);
+    // Orientación hacia el norte (rumbo -Z)
+    plane.rot.set(0, 0, 0); // Y=0 es norte
     plane.throttle = 0;
     plane.speed = 0;
     score = 0;
@@ -1830,7 +1890,8 @@ function startGame(){
 function resetPlane(){
     plane.pos.set(0, 15, 0);
     plane.vel.set(0, 0, 0);
-    plane.rot.set(0, 0, 0);
+    // Orientación hacia el norte (rumbo -Z)
+    plane.rot.set(0, 0, 0); // Y=0 es norte
     plane.throttle = .3;
     crashed = false;
     document.getElementById('crashOverlay').style.display = 'none';
