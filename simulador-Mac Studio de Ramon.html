@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Versión 1.3 - Planeador optimizado: despegue inmediato, 40km/h max, 200m en 7min -->
+<!-- Versión 1.2 - Configuración optimizada para planeador: 1.5kg, 4m, 500W -->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="screen-orientation" content="landscape">
-<title>Simulador RC - CRA v1.3</title>
+<title>Simulador RC - CRA v1.2</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:none;}
 html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;user-select:none;-webkit-user-select:none;}
@@ -198,7 +198,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:-ap
     <div class="setup-scroll-wrapper">
         <h2>⚙️ CONFIGURACIÓN AVANZADA</h2>
         <div class="setup-container">
-            <div class="setup-section collapsed">
+            <div class="setup-section">
                 <div class="setup-section-header" onclick="toggleSetupSection(this)">
                     <div class="setup-section-title">✈️ Tipo de Aeromodelo</div>
                     <span class="setup-section-icon">▼</span>
@@ -230,7 +230,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:-ap
                 </div>
             </div>
 
-            <div class="setup-section collapsed">
+            <div class="setup-section">
                 <div class="setup-section-header" onclick="toggleSetupSection(this)">
                     <div class="setup-section-title">🎯 Nivel de Dificultad</div>
                     <span class="setup-section-icon">▼</span>
@@ -244,7 +244,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:-ap
                 </div>
             </div>
 
-            <div class="setup-section collapsed">
+            <div class="setup-section">
                 <div class="setup-section-header" onclick="toggleSetupSection(this)">
                     <div class="setup-section-title">🎮 Controles & Física</div>
                     <span class="setup-section-icon">▼</span>
@@ -278,7 +278,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:-ap
                 </div>
             </div>
 
-            <div class="setup-section collapsed">
+            <div class="setup-section">
                 <div class="setup-section-header" onclick="toggleSetupSection(this)">
                     <div class="setup-section-title">⚡ Rendimiento del Aeromodelo</div>
                     <span class="setup-section-icon">▼</span>
@@ -305,7 +305,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:-ap
                 </div>
             </div>
 
-            <div class="setup-section collapsed">
+            <div class="setup-section">
                 <div class="setup-section-header" onclick="toggleSetupSection(this)">
                     <div class="setup-section-title">🌍 Condiciones Ambientales</div>
                     <span class="setup-section-icon">▼</span>
@@ -322,7 +322,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:-ap
                 </div>
             </div>
 
-            <div class="setup-section collapsed">
+            <div class="setup-section">
                 <div class="setup-section-header" onclick="toggleSetupSection(this)">
                     <div class="setup-section-title">📷 Cámara por Defecto</div>
                     <span class="setup-section-icon">▼</span>
@@ -335,8 +335,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:-ap
                     </div>
                     <small style="color:#718096;font-size:.75rem;">Cámara inicial al empezar el vuelo</small>
                     <div class="setup-control" style="margin-top:15px;">
-                        <label>🔍 Magnificación Vista Desde Tierra: <span class="setup-value" id="zoomValue">1.00x [0.50-10.00]</span></label>
-                        <input type="range" class="setup-slider" id="zoomSlider" min="50" max="1000" value="100" oninput="updateSetupValue('zoom', this.value)">
+                        <label>🔍 Magnificación Vista Desde Tierra: <span class="setup-value" id="zoomValue">1.00x [0.50-3.00]</span></label>
+                        <input type="range" class="setup-slider" id="zoomSlider" min="50" max="300" value="100" oninput="updateSetupValue('zoom', this.value)">
                         <small style="color:#718096;font-size:.75rem;">Mayor magnificación = avión más grande (como usar binoculares)</small>
                     </div>
                 </div>
@@ -499,7 +499,7 @@ let config = {
     windMul: 1.0,        // Multiplicador de intensidad del viento
     gravityMul: 1.0,     // Multiplicador de gravedad
     defaultCamera: 1,    // Cámara por defecto: 0=Persecución, 1=Desde Tierra, 2=Orbital
-    groundZoom: 1.0,     // Magnificación vista desde tierra (0.5=menos zoom, 10.0=más zoom)
+    groundZoom: 1.0,     // Magnificación vista desde tierra (0.5=menos zoom, 3.0=más zoom)
     mass: 1.5,           // Peso del modelo en kg (0.5-10 kg) - Planeador ligero
     wingspan: 4.0,       // Envergadura del modelo en metros (0.5-5 m) - Planeador grande
     motorPower: 500      // Potencia del motor en watts (400-1000 W) - Motor modesto para planeador
@@ -2187,15 +2187,7 @@ function selectCamera(el){
 }
 function toggleSetupSection(header){
     const section = header.parentElement;
-    const isCurrentlyCollapsed = section.classList.contains('collapsed');
-    
-    // Cerrar todas las secciones primero (acordeón)
-    document.querySelectorAll('.setup-section').forEach(s => s.classList.add('collapsed'));
-    
-    // Si la sección estaba cerrada, abrirla (si estaba abierta, queda cerrada)
-    if(isCurrentlyCollapsed){
-        section.classList.remove('collapsed');
-    }
+    section.classList.toggle('collapsed');
 }
 function openSetup(){
     document.getElementById('setupScreen').style.display = 'block';
@@ -2352,7 +2344,7 @@ function updateSetupValue(param, value){
             break;
         case 'zoom':
             config.groundZoom = val / 100;
-            document.getElementById('zoomValue').textContent = config.groundZoom.toFixed(2) + 'x [0.50-10.00]';
+            document.getElementById('zoomValue').textContent = config.groundZoom.toFixed(2) + 'x [0.50-3.00]';
             break;
         case 'mass':
             config.mass = val / 100;
