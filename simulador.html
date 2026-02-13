@@ -1519,8 +1519,10 @@ function updatePhysics(dt){
 
     // Empuje (con multiplicador de velocidad máxima y potencia del motor)
     // La potencia del motor (400-1000W) afecta el empuje: 700W es base (1.0x)
-    const powerFactor = (config.motorPower || 700) / 700;
-    const thrust = plane.throttle * cfg.maxSpeed * config.maxSpeedMul * powerFactor;
+    // Usamos una relación exponencial para hacer más notoria la diferencia
+    const powerRatio = (config.motorPower || 700) / 700;
+    const powerFactor = Math.pow(powerRatio, 1.3); // Relación no-lineal para efecto más pronunciado
+    const thrust = plane.throttle * cfg.maxSpeed * config.maxSpeedMul * powerFactor * 1.4;
     const isGliding = plane.throttle < 0.05; // motor parado
     
     // Sustentación (depende de velocidad)
