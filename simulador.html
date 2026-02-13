@@ -1305,7 +1305,7 @@ function updatePhysics(dt){
     
     // Sustentación (arriba relativo al avión)
     const up = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
-    plane.vel.y += lift * .5;
+    plane.vel.y += lift;
 
     // Gravedad
     plane.vel.y -= GRAVITY * dt;
