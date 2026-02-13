@@ -277,7 +277,7 @@ function distToSectorEdge(x, z){
 const PLANES = {
     trainer: { name:'Entrenador', speed:25, maxSpeed:45, turnRate:.8, liftMul:1.3, dragMul:1.0, stallSpeed:8, color:0x3182ce, accent:0xffffff },
     sport:   { name:'Acrobático', speed:35, maxSpeed:70, turnRate:1.5, liftMul:1.0, dragMul:.8,  stallSpeed:12,color:0xe53e3e, accent:0xf6e05e },
-    glider:  { name:'Planeador',  speed:10, maxSpeed:14, turnRate:1.1, liftMul:1.8, dragMul:.5,  stallSpeed:5, color:0xf7fafc, accent:0x3182ce }
+    glider:  { name:'Planeador',  speed:10, maxSpeed:14, turnRate:1.1, liftMul:1.2, dragMul:.5,  stallSpeed:5, color:0xf7fafc, accent:0x3182ce }
 };
 const DIFFICULTY = {
     easy:   { wind:0, rings:6,  ringSize:18, ringSpeed:0 },
@@ -1308,7 +1308,7 @@ function updatePhysics(dt){
     
     // Sustentación (arriba relativo al avión)
     const up = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
-    plane.vel.y += lift;
+    plane.vel.y += lift * 0.7;
 
     // Gravedad
     plane.vel.y -= GRAVITY * dt;
