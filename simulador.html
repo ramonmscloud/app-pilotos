@@ -217,6 +217,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:-ap
                     <div class="plane-name">Planeador</div>
                 </div>
             </div>
+                    <small style="color:#718096;font-size:.75rem;margin-top:10px;display:block;">Tipo de modelo a simular</small>
+                    <div class="setup-control" style="margin-top:15px;">
+                        <label>⚖️ Peso del Modelo: <span class="setup-value" id="massValue">2.50 kg [0.50-10.00]</span></label>
+                        <input type="range" class="setup-slider" id="massSlider" min="50" max="1000" value="250" oninput="updateSetupValue('mass', this.value)">
+                    </div>
+                    <div class="setup-control" style="margin-top:10px;">
+                        <label>📏 Envergadura: <span class="setup-value" id="wingspanValue">2.50 m [0.50-5.00]</span></label>
+                        <input type="range" class="setup-slider" id="wingspanSlider" min="50" max="500" value="250" oninput="updateSetupValue('wingspan', this.value)">
+                    </div>
                 </div>
             </div>
 
@@ -258,11 +267,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:-ap
                 <small style="color:#718096;font-size:.75rem;">0 = Lineal, Mayor = Más suave en centro</small>
             </div>
             <div class="setup-control">
-                <label>Sustentación (Lift): <span class="setup-value" id="liftValue">1.00x</span></label>
+                <label>Sustentación: <span class="setup-value" id="liftValue">1.00x [0.50-2.00]</span></label>
                 <input type="range" class="setup-slider" id="liftSlider" min="50" max="200" value="100" oninput="updateSetupValue('lift', this.value)">
             </div>
             <div class="setup-control">
-                <label>Resistencia al Viento (Drag): <span class="setup-value" id="dragValue">1.00x</span></label>
+                <label>Resistencia (Drag): <span class="setup-value" id="dragValue">1.00x [0.20-2.00]</span></label>
                 <input type="range" class="setup-slider" id="dragSlider" min="20" max="200" value="100" oninput="updateSetupValue('drag', this.value)">
             </div>
                 </div>
@@ -275,15 +284,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:-ap
                 </div>
                 <div class="setup-section-content">
             <div class="setup-control">
-                <label>Velocidad Máxima: <span class="setup-value" id="maxSpeedValue">100%</span></label>
+                <label>Velocidad Máxima: <span class="setup-value" id="maxSpeedValue">50 km/h</span></label>
                 <input type="range" class="setup-slider" id="maxSpeedSlider" min="50" max="200" value="100" oninput="updateSetupValue('maxSpeed', this.value)">
             </div>
             <div class="setup-control">
-                <label>Velocidad de Pérdida (Stall): <span class="setup-value" id="stallValue">100%</span></label>
+                <label>Velocidad de Pérdida: <span class="setup-value" id="stallValue">18 km/h</span></label>
                 <input type="range" class="setup-slider" id="stallSlider" min="50" max="150" value="100" oninput="updateSetupValue('stall', this.value)">
             </div>
             <div class="setup-control">
-                <label>Peso/Inercia: <span class="setup-value" id="inertiaValue">1.00x</span></label>
+                <label>Peso/Inercia: <span class="setup-value" id="inertiaValue">1.00x [0.50-2.00]</span></label>
                 <input type="range" class="setup-slider" id="inertiaSlider" min="50" max="200" value="100" oninput="updateSetupValue('inertia', this.value)">
                 <small style="color:#718096;font-size:.75rem;">Mayor peso = más inercia, responde más lento</small>
             </div>
@@ -297,13 +306,33 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:-ap
                 </div>
                 <div class="setup-section-content">
             <div class="setup-control">
-                <label>Intensidad del Viento: <span class="setup-value" id="windValue">100%</span></label>
+                <label>Intensidad del Viento: <span class="setup-value" id="windValue">10.8 km/h [0-32.4]</span></label>
                 <input type="range" class="setup-slider" id="windSlider" min="0" max="300" value="100" oninput="updateSetupValue('wind', this.value)">
             </div>
             <div class="setup-control">
-                <label>Gravedad: <span class="setup-value" id="gravityValue">9.81 m/s²</span></label>
+                <label>Gravedad: <span class="setup-value" id="gravityValue">9.81 m/s² [4.91-14.72]</span></label>
                 <input type="range" class="setup-slider" id="gravitySlider" min="50" max="150" value="100" oninput="updateSetupValue('gravity', this.value)">
             </div>
+                </div>
+            </div>
+
+            <div class="setup-section">
+                <div class="setup-section-header" onclick="toggleSetupSection(this)">
+                    <div class="setup-section-title">📷 Cámara por Defecto</div>
+                    <span class="setup-section-icon">▼</span>
+                </div>
+                <div class="setup-section-content">
+                    <div class="diff-select" style="justify-content:flex-start;">
+                        <button class="diff-btn" data-camera="0" onclick="selectCamera(this)">Persecución</button>
+                        <button class="diff-btn selected" data-camera="1" onclick="selectCamera(this)">Desde Tierra</button>
+                        <button class="diff-btn" data-camera="2" onclick="selectCamera(this)">Orbital</button>
+                    </div>
+                    <small style="color:#718096;font-size:.75rem;">Cámara inicial al empezar el vuelo</small>
+                    <div class="setup-control" style="margin-top:15px;">
+                        <label>🔍 Magnificación Vista Desde Tierra: <span class="setup-value" id="zoomValue">1.00x [0.50-3.00]</span></label>
+                        <input type="range" class="setup-slider" id="zoomSlider" min="50" max="300" value="100" oninput="updateSetupValue('zoom', this.value)">
+                        <small style="color:#718096;font-size:.75rem;">Mayor magnificación = avión más grande (como usar binoculares)</small>
+                    </div>
                 </div>
             </div>
 
@@ -462,7 +491,11 @@ let config = {
     stallMul: 1.0,       // Multiplicador de velocidad de pérdida
     inertiaMul: 1.0,     // Multiplicador de inercia
     windMul: 1.0,        // Multiplicador de intensidad del viento
-    gravityMul: 1.0      // Multiplicador de gravedad
+    gravityMul: 1.0,     // Multiplicador de gravedad
+    defaultCamera: 1,    // Cámara por defecto: 0=Persecución, 1=Desde Tierra, 2=Orbital
+    groundZoom: 1.0,     // Magnificación vista desde tierra (0.5=menos zoom, 3.0=más zoom)
+    mass: 2.5,           // Peso del modelo en kg (0.5-10 kg)
+    wingspan: 2.5        // Envergadura del modelo en metros (0.5-5 m)
 };
 
 // Valores por defecto para reset
@@ -563,7 +596,7 @@ scene.add(dirLight);
 // Cámara
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.5, 3000);
 camera.position.set(0, 30, 50);
-let cameraMode = 1; // 0=chase, 1=ground, 2=orbit
+let cameraMode = 1; // 0=chase, 1=ground, 2=orbit - valor inicial, se actualiza desde config
 const cameraNames = ['Persecución','Desde Tierra','Orbital'];
 
 // ============================================================
@@ -1718,10 +1751,18 @@ function updateCamera(dt){
         const targetPos = p.clone().add(behind).add(new THREE.Vector3(0, 4, 0));
         camera.position.lerp(targetPos, 5*dt);
         camera.lookAt(p.x, p.y, p.z);
+        // FOV normal para persecución
+        camera.fov = 60;
+        camera.updateProjectionMatrix();
     } else if(cameraMode === 1){
         // Ground camera (desde posición del piloto)
         camera.position.set(5, 2, 5);
         camera.lookAt(p.x, p.y, p.z);
+        // Aplicar magnificación: menor FOV = más zoom
+        // FOV base 60°, con zoom 1.0x = 60°, zoom 2.0x = 30°, zoom 3.0x = 20°
+        const baseFOV = 60;
+        camera.fov = baseFOV / config.groundZoom;
+        camera.updateProjectionMatrix();
     } else {
         // Orbit
         orbitAngle += .3 * dt;
@@ -1732,6 +1773,9 @@ function updateCamera(dt){
             p.z + Math.sin(orbitAngle)*dist
         );
         camera.lookAt(p);
+        // FOV normal para orbital
+        camera.fov = 60;
+        camera.updateProjectionMatrix();
     }
 }
 
@@ -2105,12 +2149,23 @@ function selectSetupPlane(el){
     document.querySelectorAll('#setupScreen .plane-card').forEach(c=>c.classList.remove('selected'));
     el.classList.add('selected');
     selectedPlane = el.dataset.plane;
+    // Actualizar valores de velocidad al cambiar avión
+    updateSetupValue('maxSpeed', document.getElementById('maxSpeedSlider').value);
+    updateSetupValue('stall', document.getElementById('stallSlider').value);
     saveConfig();
 }
 function selectSetupDiff(el){
     document.querySelectorAll('#setupScreen .diff-btn').forEach(c=>c.classList.remove('selected'));
     el.classList.add('selected');
     selectedDiff = el.dataset.diff;
+    // Actualizar viento al cambiar dificultad
+    updateSetupValue('wind', document.getElementById('windSlider').value);
+    saveConfig();
+}
+function selectCamera(el){
+    document.querySelectorAll('#setupScreen .diff-select button[data-camera]').forEach(c=>c.classList.remove('selected'));
+    el.classList.add('selected');
+    config.defaultCamera = parseInt(el.dataset.camera);
     saveConfig();
 }
 function toggleSetupSection(header){
@@ -2172,6 +2227,9 @@ function loadSetupValues(){
     document.getElementById('inertiaSlider').value = config.inertiaMul * 100;
     document.getElementById('windSlider').value = config.windMul * 100;
     document.getElementById('gravitySlider').value = config.gravityMul * 100;
+    document.getElementById('zoomSlider').value = config.groundZoom * 100;
+    document.getElementById('massSlider').value = config.mass * 100;
+    document.getElementById('wingspanSlider').value = config.wingspan * 100;
     // Actualizar displays
     updateSetupValue('expoThrottle', config.expoThrottle * 100);
     updateSetupValue('expoYaw', config.expoYaw * 100);
@@ -2184,6 +2242,9 @@ function loadSetupValues(){
     updateSetupValue('inertia', config.inertiaMul * 100);
     updateSetupValue('wind', config.windMul * 100);
     updateSetupValue('gravity', config.gravityMul * 100);
+    updateSetupValue('zoom', config.groundZoom * 100);
+    updateSetupValue('mass', config.mass * 100);
+    updateSetupValue('wingspan', config.wingspan * 100);
     // Actualizar selección de avión y dificultad
     document.querySelectorAll('#setupScreen .plane-card').forEach(c=>c.classList.remove('selected'));
     const planeCard = document.querySelector(`#setupScreen .plane-card[data-plane="${selectedPlane}"]`);
@@ -2191,9 +2252,16 @@ function loadSetupValues(){
     document.querySelectorAll('#setupScreen .diff-btn').forEach(c=>c.classList.remove('selected'));
     const diffBtn = document.querySelector(`#setupScreen .diff-btn[data-diff="${selectedDiff}"]`);
     if(diffBtn) diffBtn.classList.add('selected');
+    // Actualizar selección de cámara
+    document.querySelectorAll('#setupScreen .diff-select button[data-camera]').forEach(c=>c.classList.remove('selected'));
+    const cameraBtn = document.querySelector(`#setupScreen .diff-select button[data-camera="${config.defaultCamera}"]`);
+    if(cameraBtn) cameraBtn.classList.add('selected');
 }
 function updateSetupValue(param, value){
     const val = parseFloat(value);
+    const cfg = PLANES[selectedPlane];
+    const diff = DIFFICULTY[selectedDiff];
+    
     switch(param){
         case 'expoThrottle':
             config.expoThrottle = val / 100;
@@ -2213,32 +2281,55 @@ function updateSetupValue(param, value){
             break;
         case 'lift':
             config.liftMul = val / 100;
-            document.getElementById('liftValue').textContent = config.liftMul.toFixed(2) + 'x';
+            document.getElementById('liftValue').textContent = config.liftMul.toFixed(2) + 'x [0.50-2.00]';
             break;
         case 'drag':
             config.dragMul = val / 100;
-            document.getElementById('dragValue').textContent = config.dragMul.toFixed(2) + 'x';
+            document.getElementById('dragValue').textContent = config.dragMul.toFixed(2) + 'x [0.20-2.00]';
             break;
         case 'maxSpeed':
             config.maxSpeedMul = val / 100;
-            document.getElementById('maxSpeedValue').textContent = Math.round(val) + '%';
+            const maxSpeedKmh = cfg.maxSpeed * 3.6 * config.maxSpeedMul;
+            const minMaxSpeed = (cfg.maxSpeed * 3.6 * 0.5).toFixed(0);
+            const maxMaxSpeed = (cfg.maxSpeed * 3.6 * 2.0).toFixed(0);
+            document.getElementById('maxSpeedValue').textContent = 
+                maxSpeedKmh.toFixed(0) + ' km/h [' + minMaxSpeed + '-' + maxMaxSpeed + ']';
             break;
         case 'stall':
             config.stallMul = val / 100;
-            document.getElementById('stallValue').textContent = Math.round(val) + '%';
+            const stallKmh = cfg.stallSpeed * 3.6 * config.stallMul;
+            const minStall = (cfg.stallSpeed * 3.6 * 0.5).toFixed(0);
+            const maxStall = (cfg.stallSpeed * 3.6 * 1.5).toFixed(0);
+            document.getElementById('stallValue').textContent = 
+                stallKmh.toFixed(0) + ' km/h [' + minStall + '-' + maxStall + ']';
             break;
         case 'inertia':
             config.inertiaMul = val / 100;
-            document.getElementById('inertiaValue').textContent = config.inertiaMul.toFixed(2) + 'x';
+            document.getElementById('inertiaValue').textContent = config.inertiaMul.toFixed(2) + 'x [0.50-2.00]';
             break;
         case 'wind':
             config.windMul = val / 100;
-            document.getElementById('windValue').textContent = Math.round(val) + '%';
+            const windKmh = diff.wind * 3.6 * config.windMul;
+            const maxWind = (diff.wind * 3.6 * 3.0).toFixed(1);
+            document.getElementById('windValue').textContent = 
+                windKmh.toFixed(1) + ' km/h [0-' + maxWind + ']';
             break;
         case 'gravity':
             config.gravityMul = val / 100;
             const g = 9.81 * config.gravityMul;
-            document.getElementById('gravityValue').textContent = g.toFixed(2) + ' m/s²';
+            document.getElementById('gravityValue').textContent = g.toFixed(2) + ' m/s² [4.91-14.72]';
+            break;
+        case 'zoom':
+            config.groundZoom = val / 100;
+            document.getElementById('zoomValue').textContent = config.groundZoom.toFixed(2) + 'x [0.50-3.00]';
+            break;
+        case 'mass':
+            config.mass = val / 100;
+            document.getElementById('massValue').textContent = config.mass.toFixed(2) + ' kg [0.50-10.00]';
+            break;
+        case 'wingspan':
+            config.wingspan = val / 100;
+            document.getElementById('wingspanValue').textContent = config.wingspan.toFixed(2) + ' m [0.50-5.00]';
             break;
     }
     // Guardar automáticamente cada cambio
@@ -2260,6 +2351,9 @@ function startGame(){
     score = 0;
     crashed = false;
     startTime = Date.now();
+    
+    // Establecer cámara por defecto desde config
+    cameraMode = config.defaultCamera;
     
     buildPlane(selectedPlane);
     spawnRings();
