@@ -2365,11 +2365,13 @@ function startGame(){
     goFullscreen();
 }
 function resetPlane(){
-    plane.pos.set(0, 15, 0);
+    // Reset en punto de salida, parado en el suelo con nariz hacia norte
+    plane.pos.set(0, 0.3, 0);
     plane.vel.set(0, 0, 0);
     // Orientación hacia el norte (rumbo -Z)
     plane.rot.set(0, 0, 0); // Y=0 es norte
-    plane.throttle = .3;
+    plane.throttle = 0;
+    plane.speed = 0;
     crashed = false;
     document.getElementById('crashOverlay').style.display = 'none';
 }
