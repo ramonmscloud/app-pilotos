@@ -1460,6 +1460,11 @@ function updatePhysics(dt){
     const coordTurnRate = Math.sin(bankAngle) * cfg.turnRate * 2.0;
     plane.rot.y += coordTurnRate * dt;
 
+    // Calcular velocidad actual (necesaria para asistencias)
+    const speed = plane.vel.length();
+    plane.speed = speed;
+    const configStallSpeed = cfg.stallSpeed * config.stallMul;
+
     // Amortiguación de roll/pitch
     // El modo autoestabilizado solo actúa si NO hay input manual
     const noManualInput = Math.abs(plane.inputRoll) < 0.05 && Math.abs(plane.inputPitch) < 0.05 && Math.abs(plane.inputYaw) < 0.05 && (!joysticks.left.active && !joysticks.right.active);
@@ -1582,10 +1587,6 @@ function updatePhysics(dt){
     const thrust = plane.throttle * cfg.maxSpeed * config.maxSpeedMul * powerFactor * massRatio * 4.5;
     const isGliding = plane.throttle < 0.05; // motor parado
     
-    // Sustentación (depende de velocidad)
-    const speed = plane.vel.length();
-    plane.speed = speed;
-    
     // Ratio de planeo: planeador optimizado 21:1 (200m en 7min), entrenador=10:1, acrobático=7:1
     let glideRatio = cfg.liftMul >= 1.5 ? 21 : (cfg.liftMul > 1.1 ? 10 : 7);
     
@@ -1597,8 +1598,7 @@ function updatePhysics(dt){
     }
     
     // En planeo, la sustentación se mantiene mientras haya velocidad
-    // Velocidad mínima de planeo más baja que stallSpeed (con configuración)
-    const configStallSpeed = cfg.stallSpeed * config.stallMul;
+    // Velocidad mínima de planeo más baja que stallSpeed (ya calculadas arriba)
     const minGlideSpeed = configStallSpeed * 0.8;
     
     // ÁNGULO DE ATAQUE Y PÉRDIDA: depende de velocidad Y ángulo
