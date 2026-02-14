@@ -1635,15 +1635,16 @@ function updatePhysics(dt){
             const diveBoost = Math.abs(Math.sin(plane.rot.x)) * 5.0;
             plane.vel.addScaledVector(fwd, diveBoost * dt);
         }
-        // Si nariz arriba en planeo, perder velocidad pero ganar altitud temporalmente
-        if(plane.rot.x > 5*DEG && speed > configStallSpeed){
-            plane.vel.y += Math.sin(plane.rot.x) * speed * 0.3 * dt;
-        }
+        // Si nariz arriba en planeo: solo pierde velocidad, NUNCA gana altitud
+        // (la pérdida de velocidad ya ralentiza el avión, causando más descenso)
     }
     
     // Sustentación (arriba relativo al avión)
     const up = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
-    plane.vel.y += lift * 0.7;
+    // Solo aplicar sustentación adicional con motor - en planeo ya está calculada
+    if(!isGliding){
+        plane.vel.y += lift * 0.7;
+    }
 
     // Gravedad (con configuración)
     plane.vel.y -= GRAVITY * config.gravityMul * dt;
