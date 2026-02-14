@@ -1551,8 +1551,19 @@ function updatePhysics(dt){
         plane.rot.x *= (1 - stability * .5 * dt);
     }
 
-    // Clamp pitch
-    const maxPitch = autoStabilize ? 25*DEG : Math.PI/3;
+    // Clamp pitch - permitir maniobras acrobáticas con velocidad suficiente
+    const speedRatioForLimit = speed / (cfg.stallSpeed * config.stallMul);
+    let maxPitch;
+    if(speedRatioForLimit >= 2.0){
+        // Velocidad alta: permite rizos completos (sin límite)
+        maxPitch = Math.PI * 2;
+    } else if(autoStabilize){
+        // Autoestabilizado: limitado para seguridad
+        maxPitch = 25 * DEG;
+    } else {
+        // Modo manual, velocidad baja/media: límite estándar
+        maxPitch = Math.PI / 3; // 60°
+    }
     plane.rot.x = Math.max(-maxPitch, Math.min(maxPitch, plane.rot.x));
 
     // Dirección de avance basada en rotación
@@ -1589,12 +1600,48 @@ function updatePhysics(dt){
     // Velocidad mínima de planeo más baja que stallSpeed (con configuración)
     const configStallSpeed = cfg.stallSpeed * config.stallMul;
     const minGlideSpeed = configStallSpeed * 0.8;
+    
+    // ÁNGULO DE ATAQUE Y PÉRDIDA: depende de velocidad Y ángulo
+    // Con velocidad alta (>2x stallSpeed) puede hacer rizos sin pérdida
+    // Con velocidad baja y ángulo alto → pérdida
+    const pitchAngle = plane.rot.x;
+    const speedRatio = speed / configStallSpeed;
+    
+    let attackAngleFactor = 1.0;
+    
+    // Solo evaluar pérdida por ángulo si la velocidad es baja
+    if(speedRatio < 2.0){
+        // Velocidad insuficiente para maniobras extremas
+        const maxSafePitch = 15 * DEG;
+        const criticalPitch = 35 * DEG;
+        
+        if(Math.abs(pitchAngle) > maxSafePitch){
+            // Ángulo alto con poca velocidad → pérdida gradual
+            const excessAngle = Math.abs(pitchAngle) - maxSafePitch;
+            const stallRange = criticalPitch - maxSafePitch;
+            const stallProgress = Math.min(1, excessAngle / stallRange);
+            
+            // Cuanto menor la velocidad, más severa la pérdida
+            const velocityPenalty = Math.max(0, 1 - speedRatio / 2);
+            attackAngleFactor = Math.max(0, 1 - stallProgress * velocityPenalty);
+        } else if(pitchAngle > 0){
+            // Ángulo moderado: ligera mejora de sustentación
+            attackAngleFactor = 1.0 + (pitchAngle / maxSafePitch) * 0.2;
+        }
+    } else {
+        // Velocidad alta: permite maniobras acrobáticas (rizos, toneles)
+        // Sustentación proporcional según orientación
+        // En invertido (pitch ~180°) la sustentación es negativa pero efectiva
+        const normalizedPitch = Math.abs(((pitchAngle + Math.PI) % (2 * Math.PI)) - Math.PI);
+        attackAngleFactor = 1.0 + Math.cos(normalizedPitch) * 0.3;
+    }
+    
     let liftFactor;
     if(isGliding){
         // Planeo: sustentación casi completa si hay velocidad suficiente
-        liftFactor = Math.min(speed / minGlideSpeed, 1.0) * cfg.liftMul * config.liftMul * 1.05;
+        liftFactor = Math.min(speed / minGlideSpeed, 1.0) * cfg.liftMul * config.liftMul * 1.05 * attackAngleFactor;
     } else {
-        liftFactor = Math.min(speed / configStallSpeed, 1.0) * cfg.liftMul * config.liftMul;
+        liftFactor = Math.min(speed / configStallSpeed, 1.0) * cfg.liftMul * config.liftMul * attackAngleFactor;
     }
     const lift = liftFactor * GRAVITY * config.gravityMul * dt;
 
@@ -1618,33 +1665,33 @@ function updatePhysics(dt){
     // Empuje en dirección de avance
     plane.vel.addScaledVector(fwd, thrust * dt * .5);
     
-    // En planeo sin motor: convertir altitud en velocidad
-    // La gravedad tira hacia abajo, pero la sustentación compensa parcialmente
-    // El avión desciende suavemente según su ratio de planeo
+    // INTERCAMBIO ENERGÍA: Altitud ↔ Velocidad (siempre activo)
+    // Nariz abajo: gana velocidad (convierte energía potencial en cinética)
+    // Nariz arriba: pierde velocidad (convierte energía cinética en potencial)
+    if(plane.pos.y > 3){
+        const pitchEffect = -Math.sin(pitchAngle) * speed * 0.4;
+        plane.vel.addScaledVector(fwd, pitchEffect * dt);
+    }
+    
+    // En planeo sin motor: descenso gradual según ratio de planeo
+    // (solo controla la tasa de descenso, no permite subir)
     if(isGliding && speed > minGlideSpeed && plane.pos.y > 3){
         // Descenso controlado: la tasa de descenso depende del glide ratio
         // Ratio 21:1 = por cada 21m horizontales pierde 1m de altitud
-        // Con velocidad de ~10 m/s (36 km/h): desciende 0.476 m/s → 200m en 7 minutos
         const descentRate = speed / glideRatio;
-        // Compensar la gravedad para lograr la tasa de descenso exacta
-        const glideComp = GRAVITY * config.gravityMul - descentRate;
-        plane.vel.y += glideComp * dt;
-        
-        // Si nariz abajo, ganar velocidad (intercambio altitud→velocidad)
-        if(plane.rot.x < -3*DEG){
-            const diveBoost = Math.abs(Math.sin(plane.rot.x)) * 5.0;
-            plane.vel.addScaledVector(fwd, diveBoost * dt);
+        // Limitar la velocidad vertical para no subir en planeo
+        // Solo aplicar si el descenso natural (gravedad-lift) es menor que el deseado
+        const naturalDescent = -plane.vel.y;
+        if(naturalDescent < descentRate){
+            // Reducir sustentación para aumentar descenso
+            const extraDescent = descentRate - naturalDescent;
+            plane.vel.y -= extraDescent * dt * 10;
         }
-        // Si nariz arriba en planeo: solo pierde velocidad, NUNCA gana altitud
-        // (la pérdida de velocidad ya ralentiza el avión, causando más descenso)
     }
     
-    // Sustentación (arriba relativo al avión)
+    // Sustentación: aplicar siempre que haya velocidad y ángulo de ataque válido
     const up = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
-    // Solo aplicar sustentación adicional con motor - en planeo ya está calculada
-    if(!isGliding){
-        plane.vel.y += lift * 0.7;
-    }
+    plane.vel.y += lift * 0.7;
 
     // Gravedad (con configuración)
     plane.vel.y -= GRAVITY * config.gravityMul * dt;
