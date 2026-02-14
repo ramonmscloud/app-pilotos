@@ -582,7 +582,13 @@ let audioCtx, gainNode, oscNode, engineStarted = false;
 //  THREE.JS SETUP
 // ============================================================
 const canvas = document.getElementById('gameCanvas');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+const renderer = new THREE.WebGLRenderer({ 
+    canvas, 
+    antialias: true, 
+    alpha: false,
+    powerPreference: 'high-performance', // Mejor GPU en dispositivos con múltiples GPUs
+    stencil: false // No necesario, mejora rendimiento en iOS
+});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
@@ -1227,27 +1233,44 @@ function updateWind(dt){
 // ============================================================
 function initAudio(){
     if(engineStarted) return;
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    // Motor principal
-    oscNode = audioCtx.createOscillator();
-    oscNode.type = 'sawtooth';
-    oscNode.frequency.value = 80;
-    gainNode = audioCtx.createGain();
-    gainNode.gain.value = 0;
-    
-    // Filtro
-    const filter = audioCtx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = 400;
-    
-    oscNode.connect(filter);
-    filter.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-    oscNode.start();
-    engineStarted = true;
+    try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // iOS: Resume AudioContext después de interacción del usuario
+        if(audioCtx.state === 'suspended'){
+            audioCtx.resume().catch(e => console.log('Audio resume error:', e));
+        }
+        
+        // Motor principal
+        oscNode = audioCtx.createOscillator();
+        oscNode.type = 'sawtooth';
+        oscNode.frequency.value = 80;
+        gainNode = audioCtx.createGain();
+        gainNode.gain.value = 0;
+        
+        // Filtro
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 400;
+        
+        oscNode.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscNode.start();
+        engineStarted = true;
+    } catch(e) {
+        console.log('Audio init error:', e);
+        engineStarted = false;
+    }
 }
 function updateAudio(){
     if(!engineStarted || !audioCtx) return;
+    
+    // iOS: Asegurar que el AudioContext está activo
+    if(audioCtx.state === 'suspended'){
+        audioCtx.resume().catch(e => {});
+    }
+    
     if(soundMuted){ gainNode.gain.value=0; return; }
     const thr = plane.throttle;
     const spd = plane.speed;
@@ -2614,11 +2637,24 @@ function backToMenu(){
 }
 function goFullscreen(){
     const el = document.documentElement;
-    if(el.requestFullscreen) el.requestFullscreen().catch(()=>{});
-    else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-    // Lock orientation
+    // Intentar varios métodos para compatibilidad con iOS
+    if(el.requestFullscreen) {
+        el.requestFullscreen().catch(()=>{});
+    } else if(el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen();
+    } else if(el.webkitRequestFullScreen) {
+        // iOS Safari antiguo (con mayúscula S)
+        el.webkitRequestFullScreen();
+    }
+    
+    // Lock orientation (no soportado en iOS Safari)
     if(screen.orientation && screen.orientation.lock){
         screen.orientation.lock('landscape').catch(()=>{});
+    } else if(window.screen && window.screen.lockOrientation) {
+        // Fallback para navegadores antiguos
+        try {
+            window.screen.lockOrientation('landscape');
+        } catch(e) {}
     }
 }
 
@@ -2634,6 +2670,15 @@ window.addEventListener('resize', ()=>{
     renderer.setSize(window.innerWidth, window.innerHeight);
     camera.aspect = window.innerWidth/window.innerHeight;
     camera.updateProjectionMatrix();
+});
+
+// iOS: también escuchar orientationchange
+window.addEventListener('orientationchange', ()=>{
+    setTimeout(()=>{
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        camera.aspect = window.innerWidth/window.innerHeight;
+        camera.updateProjectionMatrix();
+    }, 100); // Pequeño delay para que iOS actualice las dimensiones
 });
 
 // Prevenir scroll/zoom
