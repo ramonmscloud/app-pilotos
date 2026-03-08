@@ -1203,7 +1203,7 @@
             scrollContainer.style.background = '#525659';
             scrollContainer.style.padding = '10px';
             scrollContainer.style.boxSizing = 'border-box';
-            scrollContainer.style.touchAction = 'none'; // BLOQUEAR todos los gestos nativos para evitar efecto espejo en iOS
+            scrollContainer.style.touchAction = 'pan-x pan-y pinch-zoom'; // Permitir gestos nativos de iOS
             
             // Canvas donde se renderiza el PDF
             const canvas = document.createElement('canvas');
@@ -1414,7 +1414,7 @@
             scrollContainer.style.background = '#525659';
             scrollContainer.style.padding = '10px';
             scrollContainer.style.boxSizing = 'border-box';
-            scrollContainer.style.touchAction = 'none'; // BLOQUEAR todos los gestos nativos para evitar efecto espejo en iOS
+            scrollContainer.style.touchAction = 'pan-x pan-y pinch-zoom'; // Permitir gestos nativos de iOS
             
             // Canvas donde se renderiza el PDF
             const canvas = document.createElement('canvas');
@@ -1433,14 +1433,34 @@
             scrollContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
             scrollContainer.addEventListener('touchend', handleTouchEnd, { passive: false });
             
-            // Cargar PDF con PDF.js
-            const loadingTask = pdfjsLib.getDocument('Normas_Seguridad_y_Operaciones_Limpias.pdf');
+            // Cargar PDF con PDF.js - Usar URL absoluta para iOS
             try {
+                // Obtener la ruta base del documento actual
+                const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+                const pdfUrl = baseUrl + 'Normas_Seguridad_y_Operaciones_Limpias.pdf';
+                
+                // Mostrar mensaje de carga
+                scrollContainer.innerHTML = '<p style="color:white; padding:20px;">Cargando documento...</p>';
+                
+                // Cargar el PDF mediante fetch para mejor compatibilidad con iOS
+                const response = await fetch(pdfUrl);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const arrayBuffer = await response.arrayBuffer();
+                const typedArray = new Uint8Array(arrayBuffer);
+                
+                const loadingTask = pdfjsLib.getDocument({ data: typedArray });
                 pdfDoc = await loadingTask.promise;
                 currentPage = 1;
+                
+                // Limpiar mensaje de carga y renderizar
+                scrollContainer.innerHTML = '';
+                scrollContainer.appendChild(canvas);
                 renderPdfPage();
             } catch (error) {
-                scrollContainer.innerHTML = '<p style="color:white; padding:20px;">Error al cargar el PDF</p>';
+                console.error('Error al cargar PDF:', error);
+                scrollContainer.innerHTML = '<p style="color:white; padding:20px;">Error al cargar el PDF: ' + error.message + '</p>';
             }
             
             document.getElementById('viewerModal').classList.add('open');
